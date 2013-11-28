@@ -26,13 +26,16 @@ import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class Reindex extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String indexTableName = (String) state.get("indexTableName");
     String tmpIndexTableName = indexTableName + "_tmp";
     String docTableName = (String) state.get("docTableName");
@@ -40,10 +43,10 @@ public class Reindex extends Test {
     
     Random rand = (Random) state.get("rand");
     
-    ShardFixture.createIndexTable(this.log, state, "_tmp", rand);
+    ShardFixture.createIndexTable(this.log, state, accumuloState, "_tmp", rand);
     
-    Scanner scanner = state.getConnector().createScanner(docTableName, Authorizations.EMPTY);
-    BatchWriter tbw = state.getConnector().createBatchWriter(tmpIndexTableName, new BatchWriterConfig());
+    Scanner scanner = accumuloState.getConnector().createScanner(docTableName, Authorizations.EMPTY);
+    BatchWriter tbw = accumuloState.getConnector().createBatchWriter(tmpIndexTableName, new BatchWriterConfig());
     
     int count = 0;
     

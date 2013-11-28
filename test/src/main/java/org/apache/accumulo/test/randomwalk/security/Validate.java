@@ -26,36 +26,38 @@ import org.apache.accumulo.core.client.security.SecurityErrorCode;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.SystemPermission;
 import org.apache.accumulo.core.security.TablePermission;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.log4j.Logger;
 
 public class Validate extends Test {
-  
+
   @Override
   public void visit(State state, Properties props) throws Exception {
     validate(state, log);
   }
-  
+
   public static void validate(State state, Logger log) throws Exception {
-    Connector conn = state.getConnector();
-    
+    final AccumuloState accumuloState = new AccumuloState(state);
+    Connector conn = accumuloState.getConnector();
+
     boolean tableExists = WalkingSecurity.get(state).getTableExists();
     boolean cloudTableExists = conn.tableOperations().list().contains(WalkingSecurity.get(state).getTableName());
     if (tableExists != cloudTableExists)
       throw new AccumuloException("Table existance out of sync");
-    
+
     boolean tableUserExists = WalkingSecurity.get(state).userExists(WalkingSecurity.get(state).getTabUserName());
     boolean cloudTableUserExists = conn.securityOperations().listLocalUsers().contains(WalkingSecurity.get(state).getTabUserName());
     if (tableUserExists != cloudTableUserExists)
       throw new AccumuloException("Table User existance out of sync");
-    
+
     Properties props = new Properties();
     props.setProperty("target", "system");
-    Authenticate.authenticate(state.getUserName(), state.getToken(), state, props);
+    Authenticate.authenticate(accumuloState.getUserName(), accumuloState.getToken(), state, accumuloState, props);
     props.setProperty("target", "table");
-    Authenticate.authenticate(state.getUserName(), state.getToken(), state, props);
-    
+    Authenticate.authenticate(accumuloState.getUserName(), accumuloState.getToken(), state, accumuloState, props);
+
     for (String user : new String[] {WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getTabUserName()}) {
       for (SystemPermission sp : SystemPermission.values()) {
         boolean hasSp = WalkingSecurity.get(state).hasSystemPermission(user, sp);
@@ -75,7 +77,7 @@ public class Validate extends Test {
         if (hasSp != accuHasSp)
           throw new AccumuloException(user + " existance out of sync for system perm " + sp + " hasSp/CloudhasSP " + hasSp + " " + accuHasSp);
       }
-      
+
       for (TablePermission tp : TablePermission.values()) {
         boolean hasTp = WalkingSecurity.get(state).hasTablePermission(user, WalkingSecurity.get(state).getTableName(), tp);
         boolean accuHasTp;
@@ -99,9 +101,9 @@ public class Validate extends Test {
         if (hasTp != accuHasTp)
           throw new AccumuloException(user + " existance out of sync for table perm " + tp + " hasTp/CloudhasTP " + hasTp + " " + accuHasTp);
       }
-      
+
     }
-    
+
     Authorizations accuAuths;
     Authorizations auths;
     try {
@@ -119,5 +121,5 @@ public class Validate extends Test {
     if (!auths.equals(accuAuths))
       throw new AccumuloException("Table User authorizations out of sync");
   }
-  
+
 }

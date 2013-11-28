@@ -30,8 +30,9 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.RegExFilter;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 /**
@@ -41,6 +42,8 @@ public class CompactFilter extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String indexTableName = (String) state.get("indexTableName");
     String docTableName = (String) state.get("docTableName");
     Random rand = (Random) state.get("rand");
@@ -56,7 +59,7 @@ public class CompactFilter extends Test {
     documentFilters.add(is);
 
     long t1 = System.currentTimeMillis();
-    state.getConnector().tableOperations().compact(docTableName, null, null, documentFilters, true, true);
+    accumuloState.getConnector().tableOperations().compact(docTableName, null, null, documentFilters, true, true);
     long t2 = System.currentTimeMillis();
     long t3 = t2 - t1;
     
@@ -68,12 +71,12 @@ public class CompactFilter extends Test {
     indexFilters.add(is);
     
     t1 = System.currentTimeMillis();
-    state.getConnector().tableOperations().compact(indexTableName, null, null, indexFilters, true, true);
+    accumuloState.getConnector().tableOperations().compact(indexTableName, null, null, indexFilters, true, true);
     t2 = System.currentTimeMillis();
     
     log.debug("Filtered documents using compaction iterators " + regex + " " + (t3) + " " + (t2 - t1));
     
-    BatchScanner bscanner = state.getConnector().createBatchScanner(docTableName, new Authorizations(), 10);
+    BatchScanner bscanner = accumuloState.getConnector().createBatchScanner(docTableName, new Authorizations(), 10);
     
     List<Range> ranges = new ArrayList<Range>();
     for (int i = 0; i < 16; i++) {

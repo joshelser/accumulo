@@ -16,13 +16,13 @@
  */
 package org.apache.accumulo.test.randomwalk.image;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.Map.Entry;
-import java.util.ArrayList;
 import java.util.Properties;
+import java.util.Random;
 import java.util.UUID;
 
 import org.apache.accumulo.core.client.BatchScanner;
@@ -32,14 +32,16 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class ScanMeta extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     // scan just the metadata of the images table to find N hashes... use the batch scanner to lookup those N hashes in the index table
     // this scan will test locality groups....
@@ -49,7 +51,7 @@ public class ScanMeta extends Test {
     
     String uuid = UUID.randomUUID().toString();
     
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     
     Scanner imageScanner = conn.createScanner(imageTableName, new Authorizations());
     

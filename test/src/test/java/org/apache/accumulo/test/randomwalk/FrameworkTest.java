@@ -16,44 +16,12 @@
  */
 package org.apache.accumulo.test.randomwalk;
 
-import java.io.File;
-
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-
 import junit.framework.TestCase;
 
+import org.apache.accumulo.randomwalk.Test;
 import org.apache.accumulo.test.randomwalk.unit.CreateTable;
-import org.junit.Assert;
 
 public class FrameworkTest extends TestCase {
-
-  public void testXML() {
-
-    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-    DocumentBuilder docbuilder;
-
-    SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-    Schema moduleSchema = null;
-    try {
-      moduleSchema = sf.newSchema(new File(this.getClass().getResource("/randomwalk/module.xsd").toURI()));
-    } catch (Exception e) {
-      Assert.fail("Caught exception: " + e);
-    }
-
-    dbf.setSchema(moduleSchema);
-
-    try {
-      File f = new File(this.getClass().getResource("/randomwalk/Basic.xml").toURI());
-      docbuilder = dbf.newDocumentBuilder();
-      docbuilder.parse(f);
-    } catch (Exception e) {
-      Assert.fail("Caught exception: " + e);
-    }
-  }
 
   public void testRWTest() {
 

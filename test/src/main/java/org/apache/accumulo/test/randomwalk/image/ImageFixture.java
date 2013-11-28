@@ -29,8 +29,9 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.impl.Tables;
-import org.apache.accumulo.test.randomwalk.Fixture;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.Fixture;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class ImageFixture extends Fixture {
@@ -40,9 +41,10 @@ public class ImageFixture extends Fixture {
   
   @Override
   public void setUp(State state) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
-    Connector conn = state.getConnector();
-    Instance instance = state.getInstance();
+    Connector conn = accumuloState.getConnector();
+    Instance instance = accumuloState.getInstance();
     
     SortedSet<Text> splits = new TreeSet<Text>();
     for (int i = 1; i < 256; i++) {
@@ -105,10 +107,11 @@ public class ImageFixture extends Fixture {
   
   @Override
   public void tearDown(State state) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     log.debug("Dropping tables: " + imageTableName + " " + indexTableName);
     
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     
     conn.tableOperations().delete(imageTableName);
     conn.tableOperations().delete(indexTableName);

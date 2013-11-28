@@ -16,8 +16,8 @@
  */
 package org.apache.accumulo.test.randomwalk.sequential;
 
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
@@ -26,22 +26,24 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.util.CachedConfiguration;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.util.ToolRunner;
 
 public class MapRedVerify extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     String[] args = new String[8];
     args[0] = "-libjars";
-    args[1] = state.getMapReduceJars();
+    args[1] = accumuloState.getMapReduceJars();
     args[2] = state.getProperty("USERNAME");
     args[3] = state.getProperty("PASSWORD");
     args[4] = state.getString("seqTableName");
-    args[5] = state.getInstance().getInstanceName();
+    args[5] = accumuloState.getInstance().getInstanceName();
     args[6] = state.getProperty("ZOOKEEPERS");
     args[7] = args[4] + "_MR";
     
@@ -50,7 +52,7 @@ public class MapRedVerify extends Test {
       return;
     }
     
-    Scanner outputScanner = state.getConnector().createScanner(args[7], Authorizations.EMPTY);
+    Scanner outputScanner = accumuloState.getConnector().createScanner(args[7], Authorizations.EMPTY);
     outputScanner.setRange(new Range());
     
     int count = 0;
@@ -69,7 +71,7 @@ public class MapRedVerify extends Test {
     }
     
     log.debug("Dropping table: " + args[7]);
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     conn.tableOperations().delete(args[7]);
   }
 }

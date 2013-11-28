@@ -21,16 +21,18 @@ import java.util.Properties;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class Write extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
-    BatchWriter bw = state.getMultiTableBatchWriter().getBatchWriter(state.getString("seqTableName"));
+    BatchWriter bw = accumuloState.getMultiTableBatchWriter().getBatchWriter(state.getString("seqTableName"));
     
     state.set("numWrites", state.getLong("numWrites") + 1);
     

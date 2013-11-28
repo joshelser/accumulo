@@ -19,13 +19,16 @@ package org.apache.accumulo.test.randomwalk.shard;
 import java.util.Properties;
 import java.util.Random;
 
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class Flush extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String indexTableName = (String) state.get("indexTableName");
     String dataTableName = (String) state.get("docTableName");
     Random rand = (Random) state.get("rand");
@@ -37,7 +40,7 @@ public class Flush extends Test {
     else
       table = dataTableName;
     
-    state.getConnector().tableOperations().flush(table, null, null, true);
+    accumuloState.getConnector().tableOperations().flush(table, null, null, true);
     log.debug("Flushed " + table);
   }
   

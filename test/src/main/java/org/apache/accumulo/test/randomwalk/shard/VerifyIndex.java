@@ -25,20 +25,22 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.PartialKey;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class VerifyIndex extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     String indexTableName = (String) state.get("indexTableName");
     String tmpIndexTableName = indexTableName + "_tmp";
     
     // scan new and old index and verify identical
-    Scanner indexScanner1 = state.getConnector().createScanner(tmpIndexTableName, Authorizations.EMPTY);
-    Scanner indexScanner2 = state.getConnector().createScanner(indexTableName, Authorizations.EMPTY);
+    Scanner indexScanner1 = accumuloState.getConnector().createScanner(tmpIndexTableName, Authorizations.EMPTY);
+    Scanner indexScanner2 = accumuloState.getConnector().createScanner(indexTableName, Authorizations.EMPTY);
     
     Iterator<Entry<Key,Value>> iter = indexScanner2.iterator();
     
@@ -63,8 +65,8 @@ public class VerifyIndex extends Test {
     
     log.debug("Verified " + count + " index entries ");
     
-    state.getConnector().tableOperations().delete(indexTableName);
-    state.getConnector().tableOperations().rename(tmpIndexTableName, indexTableName);
+    accumuloState.getConnector().tableOperations().delete(indexTableName);
+    accumuloState.getConnector().tableOperations().rename(tmpIndexTableName, indexTableName);
   }
   
 }

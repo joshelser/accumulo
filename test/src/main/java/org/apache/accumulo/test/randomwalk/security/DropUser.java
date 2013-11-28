@@ -21,14 +21,16 @@ import java.util.Properties;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class DropUser extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
-    Connector conn = state.getInstance().getConnector(WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getSysToken());
+    final AccumuloState accumuloState = new AccumuloState(state);
+    Connector conn = accumuloState.getInstance().getConnector(WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getSysToken());
     
     String tableUserName = WalkingSecurity.get(state).getTabUserName();
     
@@ -44,7 +46,7 @@ public class DropUser extends Test {
             throw new AccumuloException("Got a security exception when I should have had permission.", ae);
           else {
             if (exists) {
-              state.getConnector().securityOperations().dropLocalUser(tableUserName);
+              accumuloState.getConnector().securityOperations().dropLocalUser(tableUserName);
               WalkingSecurity.get(state).dropUser(tableUserName);
             }
             return;

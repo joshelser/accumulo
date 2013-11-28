@@ -25,22 +25,27 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class ConsistencyCheck extends BulkTest {
   
   @Override
   protected void runLater(State state) throws Exception {
+    AccumuloState accumuloState = new AccumuloState(state);
     Random rand = (Random) state.get("rand");
     Text row = Merge.getRandomRow(rand);
     log.info("Checking " + row);
-    String user = state.getConnector().whoami();
-    Authorizations auths = state.getConnector().securityOperations().getUserAuthorizations(user);
-    Scanner scanner = state.getConnector().createScanner(Setup.getTableName(), auths);
+    
+    String user = accumuloState.getConnector().whoami();
+    Authorizations auths = accumuloState.getConnector().securityOperations().getUserAuthorizations(user);
+    
+    Scanner scanner = accumuloState.getConnector().createScanner(Setup.getTableName(), auths);
     scanner = new IsolatedScanner(scanner);
     scanner.setRange(new Range(row));
     scanner.fetchColumnFamily(BulkPlusOne.CHECK_COLUMN_FAMILY);
+    
     Value v = null;
     Key first = null;
     for (Entry<Key,Value> entry : scanner) {

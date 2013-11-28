@@ -25,13 +25,16 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.security.Credentials;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class ChangePass extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String target = props.getProperty("target");
     String source = props.getProperty("source");
     
@@ -44,7 +47,7 @@ public class ChangePass extends Test {
       principal = WalkingSecurity.get(state).getTabUserName();
       token = WalkingSecurity.get(state).getTabToken();
     }
-    Connector conn = state.getInstance().getConnector(principal, token);
+    Connector conn = accumuloState.getInstance().getConnector(principal, token);
     
     boolean hasPerm;
     boolean targetExists;
@@ -55,7 +58,7 @@ public class ChangePass extends Test {
     
     targetExists = WalkingSecurity.get(state).userExists(target);
     
-    hasPerm = WalkingSecurity.get(state).canChangePassword(new Credentials(principal, token).toThrift(state.getInstance()), target);
+    hasPerm = WalkingSecurity.get(state).canChangePassword(new Credentials(principal, token).toThrift(accumuloState.getInstance()), target);
     
     Random r = new Random();
     

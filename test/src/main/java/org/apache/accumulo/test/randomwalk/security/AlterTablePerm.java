@@ -25,8 +25,9 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.core.security.TablePermission;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class AlterTablePerm extends Test {
   
@@ -36,6 +37,8 @@ public class AlterTablePerm extends Test {
   }
   
   public static void alter(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String action = props.getProperty("task", "toggle");
     String perm = props.getProperty("perm", "random");
     String sourceUserProp = props.getProperty("source", "system");
@@ -70,19 +73,19 @@ public class AlterTablePerm extends Test {
       sourceUser = WalkingSecurity.get(state).getTabUserName();
       sourceToken = WalkingSecurity.get(state).getTabToken();
     } else {
-      sourceUser = state.getUserName();
-      sourceToken = state.getToken();
+      sourceUser = accumuloState.getUserName();
+      sourceToken = accumuloState.getToken();
     }
-    Connector conn = state.getInstance().getConnector(sourceUser, sourceToken);
+    Connector conn = accumuloState.getInstance().getConnector(sourceUser, sourceToken);
     
-    canGive = WalkingSecurity.get(state).canGrantTable(new Credentials(sourceUser, sourceToken).toThrift(state.getInstance()), target,
+    canGive = WalkingSecurity.get(state).canGrantTable(new Credentials(sourceUser, sourceToken).toThrift(accumuloState.getInstance()), target,
         WalkingSecurity.get(state).getTableName());
     
     // toggle
     if (!"take".equals(action) && !"give".equals(action)) {
       try {
         boolean res;
-        if (hasPerm != (res = state.getConnector().securityOperations().hasTablePermission(target, tableName, tabPerm)))
+        if (hasPerm != (res = accumuloState.getConnector().securityOperations().hasTablePermission(target, tableName, tabPerm)))
           throw new AccumuloException("Test framework and accumulo are out of sync for user " + conn.whoami() + " for perm " + tabPerm.name()
               + " with local vs. accumulo being " + hasPerm + " " + res);
         

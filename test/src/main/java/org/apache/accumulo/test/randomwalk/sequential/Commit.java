@@ -18,15 +18,17 @@ package org.apache.accumulo.test.randomwalk.sequential;
 
 import java.util.Properties;
 
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class Commit extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
-    state.getMultiTableBatchWriter().flush();
+    accumuloState.getMultiTableBatchWriter().flush();
     
     log.debug("Committed " + state.getLong("numWrites") + " writes.  Total writes: " + state.getLong("totalWrites"));
     state.set("numWrites", new Long(0));

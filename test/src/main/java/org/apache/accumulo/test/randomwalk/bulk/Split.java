@@ -20,20 +20,22 @@ import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class Split extends BulkTest {
   
   @Override
   protected void runLater(State state) throws Exception {
+    AccumuloState accumuloState = new AccumuloState(state);
     SortedSet<Text> splits = new TreeSet<Text>();
     Random rand = (Random) state.get("rand");
     int count = rand.nextInt(20);
     for (int i = 0; i < count; i++)
       splits.add(new Text(String.format(BulkPlusOne.FMT, (rand.nextLong() & 0x7fffffffffffffffl) % BulkPlusOne.LOTS)));
     log.info("splitting " + splits);
-    state.getConnector().tableOperations().addSplits(Setup.getTableName(), splits);
+    accumuloState.getConnector().tableOperations().addSplits(Setup.getTableName(), splits);
   }
   
 }

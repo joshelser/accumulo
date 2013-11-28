@@ -22,14 +22,16 @@ import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class CreateUser extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
-    Connector conn = state.getInstance().getConnector(WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getSysToken());
+    final AccumuloState accumuloState = new AccumuloState(state);
+    Connector conn = accumuloState.getInstance().getConnector(WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getSysToken());
     
     String tableUserName = WalkingSecurity.get(state).getTabUserName();
     
@@ -47,7 +49,7 @@ public class CreateUser extends Test {
           // create user anyway for sake of state
           {
             if (!exists) {
-              state.getConnector().securityOperations().createLocalUser(tableUserName, tabUserPass);
+              accumuloState.getConnector().securityOperations().createLocalUser(tableUserName, tabUserPass);
               WalkingSecurity.get(state).createUser(tableUserName, tabUserPass);
             }
             return;

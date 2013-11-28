@@ -20,21 +20,23 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.SortedSet;
 
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class Split extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     String indexTableName = (String) state.get("indexTableName");
     int numPartitions = (Integer) state.get("numPartitions");
     Random rand = (Random) state.get("rand");
     
     SortedSet<Text> splitSet = ShardFixture.genSplits(numPartitions, rand.nextInt(numPartitions) + 1, "%06x");
     log.debug("adding splits " + indexTableName);
-    state.getConnector().tableOperations().addSplits(indexTableName, splitSet);
+    accumuloState.getConnector().tableOperations().addSplits(indexTableName, splitSet);
   }
   
 }

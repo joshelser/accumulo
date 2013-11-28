@@ -38,11 +38,12 @@ import org.apache.accumulo.core.security.SystemPermission;
 import org.apache.accumulo.core.security.TablePermission;
 import org.apache.accumulo.core.security.thrift.TCredentials;
 import org.apache.accumulo.core.util.CachedConfiguration;
+import org.apache.accumulo.randomwalk.State;
 import org.apache.accumulo.server.security.SecurityOperation;
 import org.apache.accumulo.server.security.handler.Authenticator;
 import org.apache.accumulo.server.security.handler.Authorizor;
 import org.apache.accumulo.server.security.handler.PermissionHandler;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.log4j.Logger;
 
@@ -51,6 +52,7 @@ import org.apache.log4j.Logger;
  */
 public class WalkingSecurity extends SecurityOperation implements Authorizor, Authenticator, PermissionHandler {
   State state = null;
+  AccumuloState accumuloState = null;
   protected final static Logger log = Logger.getLogger(WalkingSecurity.class);
   
   private static final String tableName = "SecurityTableName";
@@ -73,8 +75,9 @@ public class WalkingSecurity extends SecurityOperation implements Authorizor, Au
   }
   
   public WalkingSecurity(State state2) {
-    super(state2.getInstance().getInstanceID());
+    super(new AccumuloState(state2).getInstance().getInstanceID());
     this.state = state2;
+    this.accumuloState = new AccumuloState(this.state);
     authorizor = this;
     authenticator = this;
     permHandle = this;
@@ -285,11 +288,11 @@ public class WalkingSecurity extends SecurityOperation implements Authorizor, Au
   }
   
   public TCredentials getSysCredentials() {
-    return new Credentials(getSysUserName(), getSysToken()).toThrift(this.state.getInstance());
+    return new Credentials(getSysUserName(), getSysToken()).toThrift(this.accumuloState.getInstance());
   }
   
   public TCredentials getTabCredentials() {
-    return new Credentials(getTabUserName(), getTabToken()).toThrift(this.state.getInstance());
+    return new Credentials(getTabUserName(), getTabToken()).toThrift(this.accumuloState.getInstance());
   }
   
   public AuthenticationToken getSysToken() {

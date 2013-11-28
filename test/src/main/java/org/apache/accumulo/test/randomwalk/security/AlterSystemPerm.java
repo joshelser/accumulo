@@ -23,14 +23,17 @@ import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.security.SystemPermission;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class AlterSystemPerm extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
-    Connector conn = state.getConnector();
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
+    Connector conn = accumuloState.getConnector();
     WalkingSecurity ws = new WalkingSecurity(state);
     
     String action = props.getProperty("task", "toggle");

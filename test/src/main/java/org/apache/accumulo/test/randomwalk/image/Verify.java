@@ -18,10 +18,10 @@ package org.apache.accumulo.test.randomwalk.image;
 
 import java.security.MessageDigest;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
-import java.util.Map.Entry;
 
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
@@ -29,8 +29,9 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class Verify extends Test {
@@ -40,6 +41,7 @@ public class Verify extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     Random rand = new Random();
     
@@ -49,7 +51,7 @@ public class Verify extends Test {
     indexTableName = state.getString("indexTableName");
     imageTableName = state.getString("imageTableName");
     
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     
     Scanner indexScanner = conn.createScanner(indexTableName, new Authorizations());
     Scanner imageScanner = conn.createScanner(imageTableName, new Authorizations());

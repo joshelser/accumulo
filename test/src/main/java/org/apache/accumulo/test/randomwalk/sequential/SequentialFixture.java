@@ -22,8 +22,9 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.impl.Tables;
-import org.apache.accumulo.test.randomwalk.Fixture;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.Fixture;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class SequentialFixture extends Fixture {
   
@@ -31,9 +32,10 @@ public class SequentialFixture extends Fixture {
   
   @Override
   public void setUp(State state) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
-    Connector conn = state.getConnector();
-    Instance instance = state.getInstance();
+    Connector conn = accumuloState.getConnector();
+    Instance instance = accumuloState.getInstance();
     
     String hostname = InetAddress.getLocalHost().getHostName().replaceAll("[-.]", "_");
     
@@ -55,10 +57,11 @@ public class SequentialFixture extends Fixture {
   
   @Override
   public void tearDown(State state) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     log.debug("Dropping tables: " + seqTableName);
     
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     
     conn.tableOperations().delete(seqTableName);
   }

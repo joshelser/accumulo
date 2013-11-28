@@ -22,20 +22,22 @@ import java.util.Properties;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.impl.Tables;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class CreateTable extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
-    Connector conn = state.getConnector();
+    final AccumuloState accumuloState = new AccumuloState(state);
+    Connector conn = accumuloState.getConnector();
     
     int nextId = ((Integer) state.get("nextId")).intValue();
     String tableName = String.format("%s_%d", state.getString("tableNamePrefix"), nextId);
     try {
       conn.tableOperations().create(tableName);
-      String tableId = Tables.getNameToIdMap(state.getInstance()).get(tableName);
+      String tableId = Tables.getNameToIdMap(accumuloState.getInstance()).get(tableName);
       log.debug("created " + tableName + " (id:" + tableId + ")");
       @SuppressWarnings("unchecked")
       ArrayList<String> tables = (ArrayList<String>) state.get("tableList");

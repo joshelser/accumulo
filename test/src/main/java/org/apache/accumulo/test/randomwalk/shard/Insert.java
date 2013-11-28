@@ -26,8 +26,9 @@ import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class Insert extends Test {
   
@@ -37,14 +38,16 @@ public class Insert extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String indexTableName = (String) state.get("indexTableName");
     String dataTableName = (String) state.get("docTableName");
     int numPartitions = (Integer) state.get("numPartitions");
     Random rand = (Random) state.get("rand");
     long nextDocID = (Long) state.get("nextDocID");
     
-    BatchWriter dataWriter = state.getMultiTableBatchWriter().getBatchWriter(dataTableName);
-    BatchWriter indexWriter = state.getMultiTableBatchWriter().getBatchWriter(indexTableName);
+    BatchWriter dataWriter = accumuloState.getMultiTableBatchWriter().getBatchWriter(dataTableName);
+    BatchWriter indexWriter = accumuloState.getMultiTableBatchWriter().getBatchWriter(indexTableName);
     
     String docID = insertRandomDocument(nextDocID++, dataWriter, indexWriter, indexTableName, dataTableName, numPartitions, rand);
     

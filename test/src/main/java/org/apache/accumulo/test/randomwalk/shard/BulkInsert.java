@@ -34,8 +34,9 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.util.CachedConfiguration;
 import org.apache.accumulo.core.util.TextUtil;
 import org.apache.accumulo.core.util.UtilWaitThread;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -93,6 +94,7 @@ public class BulkInsert extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     String indexTableName = (String) state.get("indexTableName");
     String dataTableName = (String) state.get("docTableName");
@@ -126,16 +128,16 @@ public class BulkInsert extends Test {
     dataWriter.close();
     indexWriter.close();
     
-    sort(state, fs, dataTableName, rootDir + "/data.seq", rootDir + "/data_bulk", rootDir + "/data_work", maxSplits);
-    sort(state, fs, indexTableName, rootDir + "/index.seq", rootDir + "/index_bulk", rootDir + "/index_work", maxSplits);
+    sort(accumuloState, fs, dataTableName, rootDir + "/data.seq", rootDir + "/data_bulk", rootDir + "/data_work", maxSplits);
+    sort(accumuloState, fs, indexTableName, rootDir + "/index.seq", rootDir + "/index_bulk", rootDir + "/index_work", maxSplits);
     
-    bulkImport(fs, state, dataTableName, rootDir, "data");
-    bulkImport(fs, state, indexTableName, rootDir, "index");
+    bulkImport(fs, accumuloState, dataTableName, rootDir, "data");
+    bulkImport(fs, accumuloState, indexTableName, rootDir, "index");
     
     fs.delete(new Path(rootDir), true);
   }
   
-  private void bulkImport(FileSystem fs, State state, String tableName, String rootDir, String prefix) throws Exception {
+  private void bulkImport(FileSystem fs, AccumuloState state, String tableName, String rootDir, String prefix) throws Exception {
     while (true) {
       String bulkDir = rootDir + "/" + prefix + "_bulk";
       String failDir = rootDir + "/" + prefix + "_failure";
@@ -160,7 +162,7 @@ public class BulkInsert extends Test {
     }
   }
   
-  private void sort(State state, FileSystem fs, String tableName, String seqFile, String outputDir, String workDir, int maxSplits) throws Exception {
+  private void sort(AccumuloState state, FileSystem fs, String tableName, String seqFile, String outputDir, String workDir, int maxSplits) throws Exception {
     
     PrintStream out = new PrintStream(new BufferedOutputStream(fs.create(new Path(workDir + "/splits.txt"))));
     

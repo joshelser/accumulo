@@ -21,14 +21,14 @@ import java.util.ArrayList;
 
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.TableNotFoundException;
-import org.apache.accumulo.test.randomwalk.Fixture;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.Fixture;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class MultiTableFixture extends Fixture {
   
   @Override
   public void setUp(State state) throws Exception {
-    
     String hostname = InetAddress.getLocalHost().getHostName().replaceAll("[-.]", "_");
     
     state.set("tableNamePrefix", String.format("multi_%s_%s_%d", hostname, state.getPid(), System.currentTimeMillis()));
@@ -40,8 +40,9 @@ public class MultiTableFixture extends Fixture {
   
   @Override
   public void tearDown(State state) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     
     @SuppressWarnings("unchecked")
     ArrayList<String> tables = (ArrayList<String>) state.get("tableList");

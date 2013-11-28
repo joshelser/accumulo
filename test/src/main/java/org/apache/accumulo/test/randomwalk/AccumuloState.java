@@ -17,8 +17,6 @@
 package org.apache.accumulo.test.randomwalk;
 
 import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -33,73 +31,26 @@ import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.security.Credentials;
-import org.apache.log4j.Logger;
+import org.apache.accumulo.randomwalk.State;
 
-public class State {
-  
-  private static final Logger log = Logger.getLogger(State.class);
-  private HashMap<String,Object> stateMap = new HashMap<String,Object>();
+import com.google.common.base.Preconditions;
+
+public class AccumuloState {
+  @SuppressWarnings("unused")
+  private State state;
   private Properties props;
-  private int numVisits = 0;
-  private int maxVisits = Integer.MAX_VALUE;
   
   private MultiTableBatchWriter mtbw = null;
   private Connector connector = null;
   private Instance instance = null;
   
-  State(Properties props) {
-    this.props = props;
-  }
-  
-  public void setMaxVisits(int num) {
-    maxVisits = num;
-  }
-  
-  public void visitedNode() throws Exception {
-    numVisits++;
-    if (numVisits > maxVisits) {
-      log.debug("Visited max number (" + maxVisits + ") of nodes");
-      throw new Exception("Visited max number (" + maxVisits + ") of nodes");
-    }
-  }
-  
-  public String getPid() {
-    return ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
-  }
-  
-  public void set(String key, Object value) {
-    stateMap.put(key, value);
-  }
-  
-  public Object get(String key) {
-    if (stateMap.containsKey(key) == false) {
-      throw new RuntimeException("State does not contain " + key);
-    }
-    return stateMap.get(key);
-  }
-  
-  public HashMap<String,Object> getMap() {
-    return stateMap;
-  }
-  
-  /**
-   * 
-   * @return a copy of Properties, so accidental changes don't affect the framework
-   */
-  public Properties getProperties() {
-    return new Properties(props);
-  }
-  
-  public String getString(String key) {
-    return (String) stateMap.get(key);
-  }
-  
-  public Long getLong(String key) {
-    return (Long) stateMap.get(key);
-  }
-  
-  public String getProperty(String key) {
-    return props.getProperty(key);
+  public AccumuloState(State state) {
+    Preconditions.checkNotNull(state);
+    
+    // Hold onto the original State just in case we want/need it later
+    this.state = state;
+    
+    this.props = state.getProperties();
   }
   
   public Connector getConnector() throws AccumuloException, AccumuloSecurityException {

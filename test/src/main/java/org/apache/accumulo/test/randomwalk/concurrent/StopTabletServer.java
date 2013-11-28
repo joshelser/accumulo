@@ -28,9 +28,10 @@ import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.util.AddressUtil;
 import org.apache.accumulo.core.zookeeper.ZooUtil;
 import org.apache.accumulo.fate.zookeeper.ZooReader;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
 import org.apache.accumulo.server.master.state.TServerInstance;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
@@ -60,8 +61,9 @@ public class StopTabletServer extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
-    Instance instance = state.getInstance();
+    Instance instance = accumuloState.getInstance();
     
     List<TServerInstance> currentServers = new ArrayList<TServerInstance>(getTServers(instance));
     Collections.shuffle(currentServers);

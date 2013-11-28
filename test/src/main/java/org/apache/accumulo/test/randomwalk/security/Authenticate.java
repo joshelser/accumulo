@@ -25,24 +25,26 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.security.Credentials;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class Authenticate extends Test {
-  
+
   @Override
   public void visit(State state, Properties props) throws Exception {
-    authenticate(WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getSysToken(), state, props);
+    AccumuloState accumuloState = new AccumuloState(state);
+    authenticate(WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getSysToken(), state, accumuloState, props);
   }
-  
-  public static void authenticate(String principal, AuthenticationToken token, State state, Properties props) throws Exception {
+
+  public static void authenticate(String principal, AuthenticationToken token, State state, AccumuloState accumuloState, Properties props) throws Exception {
     String targetProp = props.getProperty("target");
     boolean success = Boolean.parseBoolean(props.getProperty("valid"));
-    
-    Connector conn = state.getInstance().getConnector(principal, token);
-    
+
+    Connector conn = accumuloState.getInstance().getConnector(principal, token);
+
     String target;
-    
+
     if (targetProp.equals("table")) {
       target = WalkingSecurity.get(state).getTabUserName();
     } else {
@@ -51,14 +53,14 @@ public class Authenticate extends Test {
     boolean exists = WalkingSecurity.get(state).userExists(target);
     // Copy so if failed it doesn't mess with the password stored in state
     byte[] password = Arrays.copyOf(WalkingSecurity.get(state).getUserPassword(target), WalkingSecurity.get(state).getUserPassword(target).length);
-    boolean hasPermission = WalkingSecurity.get(state).canAskAboutUser(new Credentials(principal, token).toThrift(state.getInstance()), target);
-    
+    boolean hasPermission = WalkingSecurity.get(state).canAskAboutUser(new Credentials(principal, token).toThrift(accumuloState.getInstance()), target);
+
     if (!success)
       for (int i = 0; i < password.length; i++)
         password[i]++;
-    
+
     boolean result;
-    
+
     try {
       result = conn.securityOperations().authenticateUser(target, new PasswordToken(password));
     } catch (AccumuloSecurityException ae) {

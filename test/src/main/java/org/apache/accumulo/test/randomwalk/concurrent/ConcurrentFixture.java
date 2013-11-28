@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.accumulo.test.randomwalk.Fixture;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.Fixture;
+import org.apache.accumulo.randomwalk.State;
 import org.apache.hadoop.io.Text;
 
 /**

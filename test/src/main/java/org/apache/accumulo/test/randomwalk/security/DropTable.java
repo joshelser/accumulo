@@ -26,8 +26,9 @@ import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.security.SecurityErrorCode;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.security.Credentials;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class DropTable extends Test {
   
@@ -37,6 +38,8 @@ public class DropTable extends Test {
   }
   
   public static void dropTable(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String sourceUser = props.getProperty("source", "system");
     String principal;
     AuthenticationToken token;
@@ -47,12 +50,12 @@ public class DropTable extends Test {
       principal = WalkingSecurity.get(state).getSysUserName();
       token = WalkingSecurity.get(state).getSysToken();
     }
-    Connector conn = state.getInstance().getConnector(principal, token);
+    Connector conn = accumuloState.getInstance().getConnector(principal, token);
     
     String tableName = WalkingSecurity.get(state).getTableName();
     
     boolean exists = WalkingSecurity.get(state).getTableExists();
-    boolean hasPermission = WalkingSecurity.get(state).canDeleteTable(new Credentials(principal, token).toThrift(state.getInstance()), tableName);
+    boolean hasPermission = WalkingSecurity.get(state).canDeleteTable(new Credentials(principal, token).toThrift(accumuloState.getInstance()), tableName);
     
     try {
       conn.tableOperations().delete(tableName);
@@ -62,7 +65,7 @@ public class DropTable extends Test {
           throw new AccumuloException("Got a security exception when I should have had permission.", ae);
         else {
           // Drop anyway for sake of state
-          state.getConnector().tableOperations().delete(tableName);
+          accumuloState.getConnector().tableOperations().delete(tableName);
           WalkingSecurity.get(state).cleanTablePermissions(tableName);
           return;
         }

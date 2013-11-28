@@ -27,14 +27,16 @@ import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.TableOfflineException;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class Write extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     @SuppressWarnings("unchecked")
     ArrayList<String> tables = (ArrayList<String>) state.get("tableList");
@@ -49,7 +51,7 @@ public class Write extends Test {
     
     BatchWriter bw = null;
     try {
-      bw = state.getMultiTableBatchWriter().getBatchWriter(tableName);
+      bw = accumuloState.getMultiTableBatchWriter().getBatchWriter(tableName);
     } catch (TableOfflineException e) {
       log.error("Table " + tableName + " is offline!");
       return;

@@ -24,15 +24,17 @@ import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.SystemPermission;
 import org.apache.accumulo.core.security.TablePermission;
-import org.apache.accumulo.test.randomwalk.Fixture;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.Fixture;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class SecurityFixture extends Fixture {
   
   @Override
   public void setUp(State state) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     String secTableName, systemUserName, tableUserName;
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     
     String hostname = InetAddress.getLocalHost().getHostName().replaceAll("[-.]", "_");
     
@@ -52,7 +54,7 @@ public class SecurityFixture extends Fixture {
     conn.securityOperations().createLocalUser(systemUserName, sysUserPass);
     
     WalkingSecurity.get(state).setTableName(secTableName);
-    state.set("rootUserPass", state.getCredentials().getToken());
+    state.set("rootUserPass", accumuloState.getCredentials().getToken());
     
     WalkingSecurity.get(state).setSysUserName(systemUserName);
     WalkingSecurity.get(state).createUser(systemUserName, sysUserPass);
@@ -74,9 +76,10 @@ public class SecurityFixture extends Fixture {
   
   @Override
   public void tearDown(State state) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     log.debug("One last validate");
     Validate.validate(state, log);
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     
     if (WalkingSecurity.get(state).getTableExists()) {
       String secTableName = WalkingSecurity.get(state).getTableName();

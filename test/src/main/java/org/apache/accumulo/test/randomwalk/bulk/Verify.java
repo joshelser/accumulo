@@ -29,8 +29,9 @@ import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class Verify extends Test {
@@ -39,6 +40,7 @@ public class Verify extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    AccumuloState accumuloState = new AccumuloState(state);
     ThreadPoolExecutor threadPool = Setup.getThreadPool(state);
     threadPool.shutdown();
     int lastSize = 0;
@@ -55,9 +57,9 @@ public class Verify extends Test {
       return;
     }
     
-    String user = state.getConnector().whoami();
-    Authorizations auths = state.getConnector().securityOperations().getUserAuthorizations(user);
-    Scanner scanner = state.getConnector().createScanner(Setup.getTableName(), auths);
+    String user = accumuloState.getConnector().whoami();
+    Authorizations auths = accumuloState.getConnector().securityOperations().getUserAuthorizations(user);
+    Scanner scanner = accumuloState.getConnector().createScanner(Setup.getTableName(), auths);
     scanner.fetchColumnFamily(BulkPlusOne.CHECK_COLUMN_FAMILY);
     for (Entry<Key,Value> entry : scanner) {
       byte[] value = entry.getValue().get();
@@ -97,7 +99,7 @@ public class Verify extends Test {
     }
 
     log.info("Test successful on table " + Setup.getTableName());
-    state.getConnector().tableOperations().delete(Setup.getTableName());
+    accumuloState.getConnector().tableOperations().delete(Setup.getTableName());
   }
     
   public static void main(String args[]) throws Exception {

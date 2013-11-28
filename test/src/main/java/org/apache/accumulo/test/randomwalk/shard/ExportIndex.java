@@ -25,8 +25,9 @@ import java.util.Properties;
 
 import org.apache.accumulo.core.conf.Property;
 import org.apache.accumulo.core.util.CachedConfiguration;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -39,6 +40,7 @@ public class ExportIndex extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     String indexTableName = (String) state.get("indexTableName");
     String tmpIndexTableName = indexTableName + "_tmp";
@@ -52,16 +54,16 @@ public class ExportIndex extends Test {
     fs.delete(new Path("/tmp/shard_export/" + tmpIndexTableName), true);
     
     // disable spits, so that splits can be compared later w/o worrying one table splitting and the other not
-    state.getConnector().tableOperations().setProperty(indexTableName, Property.TABLE_SPLIT_THRESHOLD.getKey(), "20G");
+    accumuloState.getConnector().tableOperations().setProperty(indexTableName, Property.TABLE_SPLIT_THRESHOLD.getKey(), "20G");
 
     long t1 = System.currentTimeMillis();
     
-    state.getConnector().tableOperations().flush(indexTableName, null, null, true);
-    state.getConnector().tableOperations().offline(indexTableName);
+    accumuloState.getConnector().tableOperations().flush(indexTableName, null, null, true);
+    accumuloState.getConnector().tableOperations().offline(indexTableName);
     
     long t2 = System.currentTimeMillis();
 
-    state.getConnector().tableOperations().exportTable(indexTableName, exportDir);
+    accumuloState.getConnector().tableOperations().exportTable(indexTableName, exportDir);
     
     long t3 = System.currentTimeMillis();
 
@@ -78,34 +80,34 @@ public class ExportIndex extends Test {
     
     long t4 = System.currentTimeMillis();
     
-    state.getConnector().tableOperations().online(indexTableName);
-    state.getConnector().tableOperations().importTable(tmpIndexTableName, copyDir);
+    accumuloState.getConnector().tableOperations().online(indexTableName);
+    accumuloState.getConnector().tableOperations().importTable(tmpIndexTableName, copyDir);
     
     long t5 = System.currentTimeMillis();
 
     fs.delete(new Path(exportDir), true);
     fs.delete(new Path(copyDir), true);
     
-    HashSet<Text> splits1 = new HashSet<Text>(state.getConnector().tableOperations().listSplits(indexTableName));
-    HashSet<Text> splits2 = new HashSet<Text>(state.getConnector().tableOperations().listSplits(tmpIndexTableName));
+    HashSet<Text> splits1 = new HashSet<Text>(accumuloState.getConnector().tableOperations().listSplits(indexTableName));
+    HashSet<Text> splits2 = new HashSet<Text>(accumuloState.getConnector().tableOperations().listSplits(tmpIndexTableName));
     
     if (!splits1.equals(splits2))
       throw new Exception("Splits not equals " + indexTableName + " " + tmpIndexTableName);
     
     HashMap<String,String> props1 = new HashMap<String,String>();
-    for (Entry<String,String> entry : state.getConnector().tableOperations().getProperties(indexTableName))
+    for (Entry<String,String> entry : accumuloState.getConnector().tableOperations().getProperties(indexTableName))
       props1.put(entry.getKey(), entry.getValue());
     
     HashMap<String,String> props2 = new HashMap<String,String>();
-    for (Entry<String,String> entry : state.getConnector().tableOperations().getProperties(tmpIndexTableName))
+    for (Entry<String,String> entry : accumuloState.getConnector().tableOperations().getProperties(tmpIndexTableName))
       props2.put(entry.getKey(), entry.getValue());
     
     if (!props1.equals(props2))
       throw new Exception("Props not equals " + indexTableName + " " + tmpIndexTableName);
 
     // unset the split threshold
-    state.getConnector().tableOperations().removeProperty(indexTableName, Property.TABLE_SPLIT_THRESHOLD.getKey());
-    state.getConnector().tableOperations().removeProperty(tmpIndexTableName, Property.TABLE_SPLIT_THRESHOLD.getKey());
+    accumuloState.getConnector().tableOperations().removeProperty(indexTableName, Property.TABLE_SPLIT_THRESHOLD.getKey());
+    accumuloState.getConnector().tableOperations().removeProperty(tmpIndexTableName, Property.TABLE_SPLIT_THRESHOLD.getKey());
 
     log.debug("Imported " + tmpIndexTableName + " from " + indexTableName + " flush: " + (t2 - t1) + "ms export: " + (t3 - t2) + "ms copy:" + (t4 - t3)
         + "ms import:" + (t5 - t4) + "ms");

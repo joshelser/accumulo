@@ -23,8 +23,9 @@ import java.util.TreeSet;
 
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.conf.Property;
-import org.apache.accumulo.test.randomwalk.Fixture;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.Fixture;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
@@ -46,8 +47,8 @@ public class ShardFixture extends Fixture {
     return splits;
   }
   
-  static void createIndexTable(Logger log, State state, String suffix, Random rand) throws Exception {
-    Connector conn = state.getConnector();
+  static void createIndexTable(Logger log, State state, AccumuloState accumuloState, String suffix, Random rand) throws Exception {
+    Connector conn = accumuloState.getConnector();
     String name = (String) state.get("indexTableName") + suffix;
     int numPartitions = (Integer) state.get("numPartitions");
     boolean enableCache = (Boolean) state.get("cacheIndex");
@@ -64,6 +65,8 @@ public class ShardFixture extends Fixture {
   
   @Override
   public void setUp(State state) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String hostname = InetAddress.getLocalHost().getHostName().replaceAll("[-.]", "_");
     String pid = state.getPid();
     
@@ -78,9 +81,9 @@ public class ShardFixture extends Fixture {
     state.set("rand", rand);
     state.set("nextDocID", new Long(0));
     
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     
-    createIndexTable(this.log, state, "", rand);
+    createIndexTable(this.log, state, accumuloState, "", rand);
     
     String docTableName = (String) state.get("docTableName");
     conn.tableOperations().create(docTableName);
@@ -94,7 +97,8 @@ public class ShardFixture extends Fixture {
   
   @Override
   public void tearDown(State state) throws Exception {
-    Connector conn = state.getConnector();
+    final AccumuloState accumuloState = new AccumuloState(state);
+    Connector conn = accumuloState.getConnector();
     
     conn.tableOperations().delete((String) state.get("indexTableName"));
     conn.tableOperations().delete((String) state.get("docTableName"));

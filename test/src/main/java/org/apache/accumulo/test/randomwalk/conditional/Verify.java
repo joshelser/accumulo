@@ -29,8 +29,9 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.ColumnSliceFilter;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 /**
  * 
@@ -39,8 +40,10 @@ public class Verify extends Test {
 
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String table = state.getString("tableName");
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
 
     int numAccts = (Integer) state.get("numAccts");
 

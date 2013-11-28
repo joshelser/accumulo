@@ -17,7 +17,7 @@
 package org.apache.accumulo.test.randomwalk.bulk;
 
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.test.randomwalk.State;
+import org.apache.accumulo.randomwalk.State;
 
 public class BulkMinusOne extends BulkTest {
   

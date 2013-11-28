@@ -23,8 +23,9 @@ import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.impl.thrift.TableOperationExceptionType;
 import org.apache.accumulo.core.client.impl.thrift.ThriftTableOperationException;
 import org.apache.accumulo.core.conf.Property;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.commons.math.random.RandomData;
 import org.apache.commons.math.random.RandomDataImpl;
 
@@ -100,13 +101,15 @@ public class Config extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     // reset any previous setting
     Object lastSetting = state.getMap().get(LAST_SETTING);
     if (lastSetting != null) {
       int choice = Integer.parseInt(lastSetting.toString());
       Property property = settings[choice].property;
       log.debug("Setting " + property.getKey() + " back to " + property.getDefaultValue());
-      state.getConnector().instanceOperations().setProperty(property.getKey(), property.getDefaultValue());
+      accumuloState.getConnector().instanceOperations().setProperty(property.getKey(), property.getDefaultValue());
     }
     lastSetting = state.getMap().get(LAST_TABLE_SETTING);
     if (lastSetting != null) {
@@ -114,10 +117,10 @@ public class Config extends Test {
       String table = parts[0];
       int choice = Integer.parseInt(parts[1]);
       Property property = tableSettings[choice].property;
-      if (state.getConnector().tableOperations().exists(table)) {
+      if (accumuloState.getConnector().tableOperations().exists(table)) {
         log.debug("Setting " + property.getKey() + " on " + table + " back to " + property.getDefaultValue());
         try {
-          state.getConnector().tableOperations().setProperty(table, property.getKey(), property.getDefaultValue());
+          accumuloState.getConnector().tableOperations().setProperty(table, property.getKey(), property.getDefaultValue());
         } catch (AccumuloException ex) {
           if (ex.getCause() instanceof ThriftTableOperationException) {
             ThriftTableOperationException ttoe = (ThriftTableOperationException)ex.getCause();
@@ -132,19 +135,19 @@ public class Config extends Test {
     state.getMap().remove(LAST_TABLE_SETTING);
     RandomData random = new RandomDataImpl();
     if (random.nextInt(0, 1) == 0) {
-      changeTableSetting(random, state, props);
+      changeTableSetting(random, state, accumuloState, props);
     } else {
-      changeSetting(random, state, props);
+      changeSetting(random, state, accumuloState, props);
     }
   }
 
-  private void changeTableSetting(RandomData random, State state, Properties props) throws Exception {
+  private void changeTableSetting(RandomData random, State state, AccumuloState accumuloState, Properties props) throws Exception {
     // pick a random property
     int choice = random.nextInt(0, tableSettings.length - 1);
     Setting setting = tableSettings[choice];
     
     // pick a random table
-    SortedSet<String> tables = state.getConnector().tableOperations().list().tailSet("ctt").headSet("ctu");
+    SortedSet<String> tables = accumuloState.getConnector().tableOperations().list().tailSet("ctt").headSet("ctu");
     if (tables.isEmpty())
       return;
     String table = random.nextSample(tables, 1)[0].toString();
@@ -154,7 +157,7 @@ public class Config extends Test {
     state.getMap().put(LAST_TABLE_SETTING, table + "," + choice);
     log.debug("Setting " + setting.property.getKey() + " on table " + table + " to " + newValue);
     try {
-      state.getConnector().tableOperations().setProperty(table, setting.property.getKey(), "" + newValue);
+      accumuloState.getConnector().tableOperations().setProperty(table, setting.property.getKey(), "" + newValue);
     } catch (AccumuloException ex) {
       if (ex.getCause() instanceof ThriftTableOperationException) {
         ThriftTableOperationException ttoe = (ThriftTableOperationException)ex.getCause();
@@ -165,7 +168,7 @@ public class Config extends Test {
     }
   }
   
-  private void changeSetting(RandomData random, State state, Properties props) throws Exception {
+  private void changeSetting(RandomData random, State state, AccumuloState accumuloState, Properties props) throws Exception {
     // pick a random property
     int choice = random.nextInt(0, settings.length - 1);
     Setting setting = settings[choice];
@@ -173,7 +176,7 @@ public class Config extends Test {
     long newValue = random.nextLong(setting.min, setting.max);
     state.getMap().put(LAST_SETTING, "" + choice);
     log.debug("Setting " + setting.property.getKey() + " to " + newValue);
-    state.getConnector().instanceOperations().setProperty(setting.property.getKey(), ""+newValue);
+    accumuloState.getConnector().instanceOperations().setProperty(setting.property.getKey(), ""+newValue);
   }
   
 }

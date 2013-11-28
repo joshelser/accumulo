@@ -20,13 +20,15 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
 
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class OfflineTable extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     @SuppressWarnings("unchecked")
     ArrayList<String> tables = (ArrayList<String>) state.get("tableList");
@@ -38,9 +40,10 @@ public class OfflineTable extends Test {
     Random rand = new Random();
     String tableName = tables.get(rand.nextInt(tables.size()));
     
-    state.getConnector().tableOperations().offline(tableName, rand.nextBoolean());
+
+    accumuloState.getConnector().tableOperations().offline(tableName, rand.nextBoolean());
     log.debug("Table " + tableName + " offline ");
-    state.getConnector().tableOperations().online(tableName, rand.nextBoolean());
+    accumuloState.getConnector().tableOperations().online(tableName, rand.nextBoolean());
     log.debug("Table " + tableName + " online ");
   }
 }

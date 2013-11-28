@@ -19,8 +19,8 @@ package org.apache.accumulo.test.randomwalk.shard;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Random;
 
 import org.apache.accumulo.core.client.BatchScanner;
@@ -31,20 +31,23 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.IntersectingIterator;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class Search extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     String indexTableName = (String) state.get("indexTableName");
     String dataTableName = (String) state.get("docTableName");
     
     Random rand = (Random) state.get("rand");
     
-    Entry<Key,Value> entry = findRandomDocument(state, dataTableName, rand);
+    Entry<Key,Value> entry = findRandomDocument(accumuloState, dataTableName, rand);
     if (entry == null)
       return;
     
@@ -68,7 +71,7 @@ public class Search extends Test {
     
     log.debug("Looking up terms " + searchTerms + " expect to find " + docID);
     
-    BatchScanner bs = state.getConnector().createBatchScanner(indexTableName, Authorizations.EMPTY, 10);
+    BatchScanner bs = accumuloState.getConnector().createBatchScanner(indexTableName, Authorizations.EMPTY, 10);
     IteratorSetting ii = new IteratorSetting(20, "ii", IntersectingIterator.class);
     IntersectingIterator.setColumnFamilies(ii, columns);
     bs.addScanIterator(ii);
@@ -89,7 +92,7 @@ public class Search extends Test {
       throw new Exception("Did not see doc " + docID + " in index.  terms:" + searchTerms + " " + indexTableName + " " + dataTableName);
   }
   
-  static Entry<Key,Value> findRandomDocument(State state, String dataTableName, Random rand) throws Exception {
+  static Entry<Key,Value> findRandomDocument(AccumuloState state, String dataTableName, Random rand) throws Exception {
     Scanner scanner = state.getConnector().createScanner(dataTableName, Authorizations.EMPTY);
     scanner.setBatchSize(1);
     scanner.setRange(new Range(Integer.toString(rand.nextInt(0xfffffff), 16), null));

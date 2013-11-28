@@ -25,15 +25,18 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.Credentials;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class SetAuths extends Test {
-  
+
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+
     String authsString = props.getProperty("auths", "_random");
-    
+
     String targetUser = props.getProperty("system");
     String target;
     String authPrincipal;
@@ -44,18 +47,19 @@ public class SetAuths extends Test {
       authToken = WalkingSecurity.get(state).getSysToken();
     } else {
       target = WalkingSecurity.get(state).getSysUserName();
-      authPrincipal = state.getUserName();
-      authToken = state.getToken();
+      authPrincipal = accumuloState.getUserName();
+      authToken = accumuloState.getToken();
     }
-    Connector conn = state.getInstance().getConnector(authPrincipal, authToken);
-    
+    Connector conn = accumuloState.getInstance().getConnector(authPrincipal, authToken);
+
     boolean exists = WalkingSecurity.get(state).userExists(target);
-    boolean hasPermission = WalkingSecurity.get(state).canChangeAuthorizations(new Credentials(authPrincipal, authToken).toThrift(state.getInstance()), target);
-    
+    boolean hasPermission = WalkingSecurity.get(state).canChangeAuthorizations(new Credentials(authPrincipal, authToken).toThrift(accumuloState.getInstance()),
+        target);
+
     Authorizations auths;
     if (authsString.equals("_random")) {
       String[] possibleAuths = WalkingSecurity.get(state).getAuthsArray();
-      
+
       Random r = new Random();
       int i = r.nextInt(possibleAuths.length);
       String[] authSet = new String[i];
@@ -71,7 +75,7 @@ public class SetAuths extends Test {
     } else {
       auths = new Authorizations(authsString.split(","));
     }
-    
+
     try {
       conn.securityOperations().changeUserAuthorizations(target, auths);
     } catch (AccumuloSecurityException ae) {
@@ -94,5 +98,5 @@ public class SetAuths extends Test {
     if (!hasPermission)
       throw new AccumuloException("Didn't get Security Exception when we should have");
   }
-  
+
 }

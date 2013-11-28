@@ -36,6 +36,11 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.accumulo.randomwalk.Fixture;
+import org.apache.accumulo.randomwalk.Framework;
+import org.apache.accumulo.randomwalk.Node;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
 import org.apache.log4j.Level;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -168,6 +173,8 @@ public class Module extends Node {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     int maxHops, maxSec;
     boolean teardown;
     
@@ -255,7 +262,7 @@ public class Module extends Node {
         if (test)
           stopTimer(nextNode);
       } catch (Exception e) {
-        log.debug("Connector belongs to user: " + state.getConnector().whoami());
+        log.debug("Connector belongs to user: " + accumuloState.getConnector().whoami());
         log.debug("Exception occured at: " + System.currentTimeMillis());
         log.debug("Properties for node: " + nextNodeId);
         for (Entry<Object,Object> entry : nodeProps.entrySet()) {

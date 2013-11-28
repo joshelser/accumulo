@@ -24,20 +24,22 @@ import org.apache.accumulo.core.master.thrift.MasterClientService.Client;
 import org.apache.accumulo.core.master.thrift.MasterGoalState;
 import org.apache.accumulo.core.util.UtilWaitThread;
 import org.apache.accumulo.master.state.SetGoalState;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.security.SystemCredentials;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.accumulo.trace.instrument.Tracer;
 
 public class Shutdown extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     log.debug("shutting down");
     SetGoalState.main(new String[] {MasterGoalState.CLEAN_STOP.name()});
     
-    while (!state.getConnector().instanceOperations().getTabletServers().isEmpty()) {
+    while (!accumuloState.getConnector().instanceOperations().getTabletServers().isEmpty()) {
       UtilWaitThread.sleep(1000);
     }
     

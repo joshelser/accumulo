@@ -18,8 +18,8 @@ package org.apache.accumulo.test.randomwalk.concurrent;
 
 import java.util.Properties;
 
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
 
 public class Apocalypse extends Test {
   

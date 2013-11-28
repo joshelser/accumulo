@@ -24,14 +24,17 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.security.SecurityErrorCode;
 import org.apache.accumulo.core.security.TablePermission;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 
 public class CreateTable extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
-    Connector conn = state.getInstance().getConnector(WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getSysToken());
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
+    Connector conn = accumuloState.getInstance().getConnector(WalkingSecurity.get(state).getSysUserName(), WalkingSecurity.get(state).getSysToken());
     
     String tableName = WalkingSecurity.get(state).getTableName();
     
@@ -48,7 +51,7 @@ public class CreateTable extends Test {
         // create table anyway for sake of state
         {
           try {
-            state.getConnector().tableOperations().create(tableName);
+            accumuloState.getConnector().tableOperations().create(tableName);
             WalkingSecurity.get(state).initTable(tableName);
           } catch (TableExistsException tee) {
             if (exists)

@@ -31,14 +31,17 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.IntersectingIterator;
 import org.apache.accumulo.core.iterators.user.RegExFilter;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class Grep extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
+    
     // pick a few randoms words... grep for those words and search the index
     // ensure both return the same set of documents
     
@@ -52,7 +55,7 @@ public class Grep extends Test {
       words[i] = new Text(Insert.generateRandomWord(rand));
     }
     
-    BatchScanner bs = state.getConnector().createBatchScanner(indexTableName, Authorizations.EMPTY, 16);
+    BatchScanner bs = accumuloState.getConnector().createBatchScanner(indexTableName, Authorizations.EMPTY, 16);
     IteratorSetting ii = new IteratorSetting(20, "ii", IntersectingIterator.class.getName());
     IntersectingIterator.setColumnFamilies(ii, words);
     bs.addScanIterator(ii);
@@ -66,7 +69,7 @@ public class Grep extends Test {
     
     bs.close();
     
-    bs = state.getConnector().createBatchScanner(dataTableName, Authorizations.EMPTY, 16);
+    bs = accumuloState.getConnector().createBatchScanner(dataTableName, Authorizations.EMPTY, 16);
     
     for (int i = 0; i < words.length; i++) {
       IteratorSetting more = new IteratorSetting(20 + i, "ii" + i, RegExFilter.class);

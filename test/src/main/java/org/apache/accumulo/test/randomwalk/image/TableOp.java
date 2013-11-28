@@ -24,14 +24,16 @@ import java.util.Set;
 
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.admin.TableOperations;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.io.Text;
 
 public class TableOp extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     // choose a table
     Random rand = new Random();
@@ -43,7 +45,7 @@ public class TableOp extends Test {
     }
     
     // check if chosen table exists
-    Connector conn = state.getConnector();
+    Connector conn = accumuloState.getConnector();
     TableOperations tableOps = conn.tableOperations();
     if (tableOps.exists(tableName) == false) {
       log.error("Table " + tableName + " does not exist!");

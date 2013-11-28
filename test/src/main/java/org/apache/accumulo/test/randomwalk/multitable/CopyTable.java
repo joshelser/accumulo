@@ -22,14 +22,16 @@ import java.util.Random;
 
 import org.apache.accumulo.core.client.impl.Tables;
 import org.apache.accumulo.core.util.CachedConfiguration;
-import org.apache.accumulo.test.randomwalk.State;
-import org.apache.accumulo.test.randomwalk.Test;
+import org.apache.accumulo.randomwalk.State;
+import org.apache.accumulo.randomwalk.Test;
+import org.apache.accumulo.test.randomwalk.AccumuloState;
 import org.apache.hadoop.util.ToolRunner;
 
 public class CopyTable extends Test {
   
   @Override
   public void visit(State state, Properties props) throws Exception {
+    final AccumuloState accumuloState = new AccumuloState(state);
     
     @SuppressWarnings("unchecked")
     ArrayList<String> tables = (ArrayList<String>) state.get("tableList");
@@ -44,29 +46,29 @@ public class CopyTable extends Test {
     
     String[] args = new String[8];
     args[0] = "-libjars";
-    args[1] = state.getMapReduceJars();
+    args[1] = accumuloState.getMapReduceJars();
     args[2] = state.getProperty("USERNAME");
     args[3] = state.getProperty("PASSWORD");
     args[4] = srcTableName;
-    args[5] = state.getInstance().getInstanceName();
+    args[5] = accumuloState.getInstance().getInstanceName();
     args[6] = state.getProperty("ZOOKEEPERS");
     args[7] = dstTableName;
     
     log.debug("copying " + srcTableName + " to " + dstTableName);
     
-    state.getConnector().tableOperations().create(dstTableName);
+    accumuloState.getConnector().tableOperations().create(dstTableName);
     
     if (ToolRunner.run(CachedConfiguration.getInstance(), new CopyTool(), args) != 0) {
       log.error("Failed to run map/red verify");
       return;
     }
     
-    String tableId = Tables.getNameToIdMap(state.getInstance()).get(dstTableName);
+    String tableId = Tables.getNameToIdMap(accumuloState.getInstance()).get(dstTableName);
     log.debug("copied " + srcTableName + " to " + dstTableName + " (id - " + tableId + " )");
     
     tables.add(dstTableName);
     
-    state.getConnector().tableOperations().delete(srcTableName);
+    accumuloState.getConnector().tableOperations().delete(srcTableName);
     log.debug("dropped " + srcTableName);
     
     nextId++;
