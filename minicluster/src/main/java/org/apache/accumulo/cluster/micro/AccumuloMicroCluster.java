@@ -24,6 +24,7 @@ import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.server.init.Initialize;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
@@ -64,6 +65,8 @@ public class AccumuloMicroCluster implements AccumuloCluster {
     });
 
     zkThread.start();
+
+    Initialize.main(new String[] {"--instance-name", cfg.getInstanceName(), "--clear-instance-name", "--password", cfg.getRootPassword()});
   }
 
   @Override
