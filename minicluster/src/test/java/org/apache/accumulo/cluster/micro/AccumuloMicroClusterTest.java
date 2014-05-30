@@ -25,6 +25,7 @@ import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
+import org.apache.accumulo.core.data.PartialKey;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
 import org.junit.Assert;
@@ -60,7 +61,7 @@ public class AccumuloMicroClusterTest {
     bw.close();
 
     Entry<Key,Value> entry = Iterables.getOnlyElement(conn.createScanner("foo", Authorizations.EMPTY));
-    Assert.assertEquals(new Key("row", "colf", "colq"), entry.getKey());
+    Assert.assertEquals(0, new Key("row", "colf", "colq").compareTo(entry.getKey(), PartialKey.ROW_COLFAM_COLQUAL));
     Assert.assertEquals(new Value("foobar".getBytes()), entry.getValue());
 
     micro.stop();
