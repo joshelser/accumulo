@@ -16,6 +16,7 @@
  */
 package org.apache.accumulo.cluster.micro;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +31,7 @@ import org.apache.accumulo.minicluster.ServerType;
 public class AccumuloMicroConfig implements AccumuloConfig {
   private static final AtomicInteger MICRO_CLUSTER_COUNT = new AtomicInteger(0);
 
+  private File dir;
   private String instanceName;
   private int numTservers = 1;
   private Map<String,String> siteConfig;
@@ -38,11 +40,12 @@ public class AccumuloMicroConfig implements AccumuloConfig {
 
   private String[] nativePathItems = null;
 
-  public AccumuloMicroConfig(String password) {
-    this(password, "microinstance" + MICRO_CLUSTER_COUNT.incrementAndGet());
+  public AccumuloMicroConfig(File dir, String password) {
+    this(dir, password, "microinstance" + MICRO_CLUSTER_COUNT.incrementAndGet());
   }
   
-  public AccumuloMicroConfig(String password, String instanceName) {
+  public AccumuloMicroConfig(File dir, String password, String instanceName) {
+    this.dir = dir;
     this.password = password;
     this.instanceName = instanceName;
   }
@@ -130,6 +133,10 @@ public class AccumuloMicroConfig implements AccumuloConfig {
   @Override
   public AccumuloMicroCluster build() throws IOException {
     return new AccumuloMicroCluster(this);
+  }
+
+  public File getDir() {
+    return this.dir;
   }
 
 }

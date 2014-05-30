@@ -25,8 +25,10 @@ import java.util.Set;
 
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.log4j.Logger;
 
 public class ContextManager {
+  private static final Logger log = Logger.getLogger(ContextManager.class);
   
   // there is a lock per context so that one context can initialize w/o blocking another context
   private class Context {
@@ -136,8 +138,10 @@ public class ContextManager {
    * configuration must be injected for ContextManager to work
    */
   public synchronized void setContextConfig(ContextsConfig config) {
-    if (this.config != null)
-      throw new IllegalStateException("Context manager config already set");
+    if (this.config != null) {
+      log.error("ContextsConfig already configured, not re-configuring");
+      return;
+    }
     this.config = config;
   }
   
