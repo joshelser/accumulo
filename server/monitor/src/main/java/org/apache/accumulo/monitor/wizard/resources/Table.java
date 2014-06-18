@@ -17,7 +17,6 @@
 package org.apache.accumulo.monitor.wizard.resources;
 
 import org.apache.accumulo.core.master.state.tables.TableState;
-import org.apache.accumulo.monitor.util.celltypes.CompactionsType;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
@@ -33,7 +32,9 @@ public class Table {
   protected double ingest;
   protected double entriesRead, entriesReturned;
   protected long holdTime;
-  protected CompactionsType scans, minc, majc;
+  protected int queuedScans, runningScans;
+  protected int queuedMinc, runningMinc;
+  protected int queuedMajc, runningMajc;
 
   public Table() {}
 
@@ -147,33 +148,63 @@ public class Table {
     this.holdTime = holdTime;
   }
 
-  @JsonProperty("scans")
-  public CompactionsType getScans() {
-    return scans;
+  @JsonProperty("runningScans")
+  public int getRunningScans() {
+    return runningScans;
   }
 
   @JsonProperty
-  public void setScans(CompactionsType scans) {
-    this.scans = scans;
+  public void setRunningScans(int runningScans) {
+    this.runningScans = runningScans;
   }
 
-  @JsonProperty("minorCompactions")
-  public CompactionsType getMinc() {
-    return minc;
+  @JsonProperty("queuedScans")
+  public int getQueuedScans() {
+    return queuedScans;
   }
 
   @JsonProperty
-  public void setMinc(CompactionsType minc) {
-    this.minc = minc;
+  public void setQueuedScans(int queuedScans) {
+    this.queuedScans = queuedScans;
   }
 
-  @JsonProperty("majorCompactions")
-  public CompactionsType getMajc() {
-    return majc;
+  @JsonProperty("runningMinorCompactions")
+  public int getRunningMinorCompactions() {
+    return runningMinc;
   }
-  
+
   @JsonProperty
-  public void setMajc(CompactionsType majc) {
-    this.majc = majc;
+  public void setRunningMinorCompactions(int runningMinorCompactions) {
+    this.runningMinc = runningMinorCompactions;
+  }
+
+  @JsonProperty("queuedMinorCompactions")
+  public int getQueuedMinorCompactions() {
+    return queuedMinc;
+  }
+
+  @JsonProperty
+  public void setQueuedMinorCompactions(int queuedMinorCompactions) {
+    this.queuedMinc = queuedMinorCompactions;
+  }
+
+  @JsonProperty("runningMajorCompactions")
+  public int getRunningMajorCompactions() {
+    return runningMajc;
+  }
+
+  @JsonProperty
+  public void setRunningMajorCompactions(int runningMajorCompactions) {
+    this.runningMajc = runningMajorCompactions;
+  }
+
+  @JsonProperty("queuedMajorCompactions")
+  public int getQueuedMajorCompactions() {
+    return queuedMajc;
+  }
+
+  @JsonProperty
+  public void setQueuedMajorCompactions(int queuedMajc) {
+    this.queuedMajc = queuedMajc;
   }
 }

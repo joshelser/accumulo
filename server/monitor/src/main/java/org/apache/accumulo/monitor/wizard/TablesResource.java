@@ -49,7 +49,7 @@ public class TablesResource {
   public List<Table> getTables() {
     Map<String,String> tidToNameMap = Tables.getIdToNameMap(HdfsZooInstance.getInstance());
     SortedMap<String,TableInfo> tableStats = new TreeMap<String,TableInfo>();
-    
+
     if (Monitor.getMmi() != null && Monitor.getMmi().tableMap != null)
       for (Entry<String,TableInfo> te : Monitor.getMmi().tableMap.entrySet())
         tableStats.put(Tables.getPrintableTableNameFromId(tidToNameMap, te.getKey()), te.getValue());
@@ -64,21 +64,29 @@ public class TablesResource {
       table.setTableName(tableName);
       table.setTableId(tableId);
       TableInfo tableInfo = tableStats.get(tableName);
-      Double holdTime = compactingByTable.get(tableId);
-      if (holdTime == null)
-        holdTime = new Double(0.);
-      
-      table.setTablets(tableInfo.tablets);
-      table.setTableState(tableManager.getTableState(tableId));
-      table.setOfflineTables(tableInfo.tablets - tableInfo.onlineTablets);
-      table.setEntries(tableInfo.recs);
-      table.setEntriesInMemory(tableInfo.recsInMemory);
-      table.setIngest(tableInfo.ingestRate);
-      table.setEntriesRead(tableInfo.scanRate);
-      table.setEntriesReturned(tableInfo.queryRate);
-      table.setHoldTime(holdTime.longValue());
+      if (null != tableInfo) {
+        Double holdTime = compactingByTable.get(tableId);
+        if (holdTime == null)
+          holdTime = new Double(0.);
 
-      tables.add(table);
+        table.setTablets(tableInfo.tablets);
+        table.setTableState(tableManager.getTableState(tableId));
+        table.setOfflineTables(tableInfo.tablets - tableInfo.onlineTablets);
+        table.setEntries(tableInfo.recs);
+        table.setEntriesInMemory(tableInfo.recsInMemory);
+        table.setIngest(tableInfo.ingestRate);
+        table.setEntriesRead(tableInfo.scanRate);
+        table.setEntriesReturned(tableInfo.queryRate);
+        table.setHoldTime(holdTime.longValue());
+        table.setRunningScans(tableInfo.scans.running);
+        table.setQueuedScans(tableInfo.scans.queued);
+        table.setRunningMinorCompactions(tableInfo.minors.running);
+        table.setQueuedMinorCompactions(tableInfo.minors.queued);
+        table.setRunningMajorCompactions(tableInfo.majors.running);
+        table.setQueuedMajorCompactions(tableInfo.majors.queued);
+
+        tables.add(table);
+      }
     }
 
     return tables;

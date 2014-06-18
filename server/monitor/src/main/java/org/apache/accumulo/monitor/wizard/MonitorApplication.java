@@ -20,10 +20,20 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
+import org.apache.accumulo.core.client.Instance;
+import org.apache.accumulo.core.util.Daemon;
+import org.apache.accumulo.core.util.LoggingRunnable;
+import org.apache.accumulo.core.util.UtilWaitThread;
+import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.server.client.HdfsZooInstance;
+import org.apache.accumulo.server.conf.ServerConfiguration;
+import org.apache.log4j.Logger;
+
 /**
  * 
  */
 public class MonitorApplication extends Application<MonitorConfiguration> {
+  private static final Logger log = Logger.getLogger(MonitorApplication.class);
 
   @Override
   public void initialize(Bootstrap<MonitorConfiguration> arg0) {
@@ -33,6 +43,28 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
 
   @Override
   public void run(MonitorConfiguration conf, Environment env) throws Exception {
+    Instance instance = HdfsZooInstance.getInstance();
+    Monitor.setInstance(instance);
+    Monitor.setConfiguration(new ServerConfiguration(instance));
+
+    // need to regularly fetch data so plot data is updated
+    new Daemon(new LoggingRunnable(log, new Runnable() {
+
+      @Override
+      public void run() {
+        while (true) {
+          try {
+            Monitor.fetchData();
+          } catch (Exception e) {
+            log.warn(e.getMessage(), e);
+          }
+
+          UtilWaitThread.sleep(333);
+        }
+
+      }
+    }), "Data fetcher").start();
+
     env.jersey().register(new TablesResource());
   }
 
