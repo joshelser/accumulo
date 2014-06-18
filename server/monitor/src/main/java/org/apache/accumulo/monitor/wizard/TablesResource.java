@@ -17,7 +17,6 @@
 package org.apache.accumulo.monitor.wizard;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -42,9 +41,9 @@ import org.apache.accumulo.server.util.TableInfoUtil;
  */
 @Path("/tables")
 @Produces(MediaType.APPLICATION_JSON)
-public class TablesResources {
+public class TablesResource {
 
-  public TablesResources() {}
+  public TablesResource() {}
 
   @GET
   public List<Table> getTables() {
@@ -79,19 +78,9 @@ public class TablesResources {
       table.setEntriesReturned(tableInfo.queryRate);
       table.setHoldTime(holdTime.longValue());
 
-      row.add(tableInfo == null ? null : tableInfo.tablets);
-      row.add(tableInfo == null ? null : tableInfo.tablets - tableInfo.onlineTablets);
-      row.add(tableInfo == null ? null : tableInfo.recs);
-      row.add(tableInfo == null ? null : tableInfo.recsInMemory);
-      row.add(tableInfo == null ? null : tableInfo.ingestRate);
-      row.add(tableInfo == null ? null : tableInfo.scanRate);
-      row.add(tableInfo == null ? null : tableInfo.queryRate);
-      row.add(holdTime.longValue());
-      row.add(tableInfo);
-      row.add(tableInfo);
-      row.add(tableInfo);
-      tableList.addRow(row);
+      tables.add(table);
     }
-    return Collections.emptyList();
+
+    return tables;
   }
 }

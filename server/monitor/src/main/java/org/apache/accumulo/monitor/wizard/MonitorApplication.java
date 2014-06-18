@@ -20,8 +20,6 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
-import org.apache.accumulo.monitor.wizard.resources.TablesResource;
-
 /**
  * 
  */
@@ -29,7 +27,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
 
   @Override
   public void initialize(Bootstrap<MonitorConfiguration> arg0) {
-    // TODO Auto-generated method stub
+    // noop
     
   }
 
