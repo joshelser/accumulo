@@ -65,6 +65,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
       }
     }), "Data fetcher").start();
 
+    env.healthChecks().register("accumulo", new AccumuloHealthCheck(instance));
     env.jersey().register(new TablesResource());
   }
 
