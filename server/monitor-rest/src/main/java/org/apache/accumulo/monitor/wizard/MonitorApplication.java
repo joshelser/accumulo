@@ -25,6 +25,10 @@ import org.apache.accumulo.core.util.Daemon;
 import org.apache.accumulo.core.util.LoggingRunnable;
 import org.apache.accumulo.core.util.UtilWaitThread;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.monitor.wizard.resources.ProblemsResource;
+import org.apache.accumulo.monitor.wizard.resources.StatisticsOverTimeResource;
+import org.apache.accumulo.monitor.wizard.resources.StatisticsResource;
+import org.apache.accumulo.monitor.wizard.resources.TablesResource;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.conf.ServerConfiguration;
 import org.apache.log4j.Logger;
@@ -65,8 +69,14 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
       }
     }), "Data fetcher").start();
 
+    // Add health checks
     env.healthChecks().register("accumulo", new AccumuloHealthCheck(instance));
+
+    // Register the resources with Jersey
     env.jersey().register(new TablesResource());
+    env.jersey().register(new StatisticsResource());
+    env.jersey().register(new StatisticsOverTimeResource());
+    env.jersey().register(new ProblemsResource());
   }
 
   @Override

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.wizard;
+package org.apache.accumulo.monitor.wizard.resources;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,6 @@ import javax.ws.rs.core.MediaType;
 import org.apache.accumulo.core.client.impl.Tables;
 import org.apache.accumulo.core.master.thrift.TableInfo;
 import org.apache.accumulo.monitor.Monitor;
-import org.apache.accumulo.monitor.wizard.resources.Table;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.tables.TableManager;
 import org.apache.accumulo.server.util.TableInfoUtil;
