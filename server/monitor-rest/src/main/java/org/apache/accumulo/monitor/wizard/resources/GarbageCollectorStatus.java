@@ -29,10 +29,17 @@ public class GarbageCollectorStatus {
   public GarbageCollectorStatus() {}
 
   public GarbageCollectorStatus(GCStatus status) {
-    last = new GarbageCollectorCycle(status.last);
-    current = new GarbageCollectorCycle(status.current);
-    lastWals = new GarbageCollectorCycle(status.lastLog);
-    currentWals = new GarbageCollectorCycle(status.currentLog);
+    if (null != status) {
+      last = new GarbageCollectorCycle(status.last);
+      current = new GarbageCollectorCycle(status.current);
+      lastWals = new GarbageCollectorCycle(status.lastLog);
+      currentWals = new GarbageCollectorCycle(status.currentLog);
+    } else {
+      last = new GarbageCollectorCycle();
+      current = new GarbageCollectorCycle();
+      lastWals = new GarbageCollectorCycle();
+      currentWals = new GarbageCollectorCycle();
+    }
   }
 
   @JsonProperty("lastCycle")
