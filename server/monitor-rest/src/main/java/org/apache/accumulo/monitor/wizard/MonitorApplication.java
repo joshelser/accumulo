@@ -25,6 +25,7 @@ import org.apache.accumulo.core.util.Daemon;
 import org.apache.accumulo.core.util.LoggingRunnable;
 import org.apache.accumulo.core.util.UtilWaitThread;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.monitor.wizard.resources.GarbageCollectorResource;
 import org.apache.accumulo.monitor.wizard.resources.ProblemsResource;
 import org.apache.accumulo.monitor.wizard.resources.StatisticsOverTimeResource;
 import org.apache.accumulo.monitor.wizard.resources.StatisticsResource;
@@ -77,6 +78,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
     env.jersey().register(new StatisticsResource());
     env.jersey().register(new StatisticsOverTimeResource());
     env.jersey().register(new ProblemsResource());
+    env.jersey().register(new GarbageCollectorResource());
   }
 
   @Override

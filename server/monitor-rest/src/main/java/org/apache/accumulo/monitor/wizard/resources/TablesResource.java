@@ -42,8 +42,6 @@ import org.apache.accumulo.server.util.TableInfoUtil;
 @Produces(MediaType.APPLICATION_JSON)
 public class TablesResource {
 
-  public TablesResource() {}
-
   @GET
   public List<Table> getTables() {
     Map<String,String> tidToNameMap = Tables.getIdToNameMap(HdfsZooInstance.getInstance());
