@@ -37,7 +37,7 @@ import org.apache.accumulo.core.zookeeper.ZooUtil;
 import org.apache.accumulo.fate.zookeeper.ZooUtil.NodeExistsPolicy;
 import org.apache.accumulo.monitor.Monitor;
 import org.apache.accumulo.monitor.rest.resources.GarbageCollectorResource;
-import org.apache.accumulo.monitor.rest.resources.LogResource;
+import org.apache.accumulo.monitor.rest.resources.MasterResource;
 import org.apache.accumulo.monitor.rest.resources.ProblemsResource;
 import org.apache.accumulo.monitor.rest.resources.StatisticsOverTimeResource;
 import org.apache.accumulo.monitor.rest.resources.StatisticsResource;
@@ -47,7 +47,6 @@ import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.conf.ServerConfiguration;
 import org.apache.accumulo.server.fs.VolumeManager;
 import org.apache.accumulo.server.fs.VolumeManagerImpl;
-import org.apache.accumulo.server.monitor.LogService;
 import org.apache.accumulo.server.zookeeper.ZooReaderWriter;
 import org.apache.log4j.Logger;
 
@@ -126,6 +125,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
     env.jersey().register(new StatisticsOverTimeResource());
     env.jersey().register(new ProblemsResource());
     env.jersey().register(new GarbageCollectorResource());
+    env.jersey().register(new MasterResource());
 
     // TODO Log messages get forwarded to this service, but aren't being made available to the LogResource
     // env.jersey().register(new LogResource());
