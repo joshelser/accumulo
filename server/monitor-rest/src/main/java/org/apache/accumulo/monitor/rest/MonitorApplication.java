@@ -42,8 +42,11 @@ import org.apache.accumulo.monitor.rest.resources.ProblemsResource;
 import org.apache.accumulo.monitor.rest.resources.StatisticsOverTimeResource;
 import org.apache.accumulo.monitor.rest.resources.StatisticsResource;
 import org.apache.accumulo.monitor.rest.resources.TablesResource;
+import org.apache.accumulo.server.Accumulo;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.conf.ServerConfiguration;
+import org.apache.accumulo.server.fs.VolumeManager;
+import org.apache.accumulo.server.fs.VolumeManagerImpl;
 import org.apache.accumulo.server.monitor.LogService;
 import org.apache.accumulo.server.zookeeper.ZooReaderWriter;
 import org.apache.log4j.Logger;
@@ -67,7 +70,8 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
     final int port = getApplicationHttpPort(conf);
     Instance instance = HdfsZooInstance.getInstance();
     Monitor.setInstance(instance);
-    Monitor.setConfiguration(new ServerConfiguration(instance));
+    ServerConfiguration serverConf = new ServerConfiguration(instance);
+    Monitor.setConfiguration(serverConf);
 
     // need to regularly fetch data so plot data is updated
     new Daemon(new LoggingRunnable(log, new Runnable() {
@@ -87,19 +91,30 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
       }
     }), "Data fetcher").start();
 
-    // TODO Hardcoded hostname
-    String hostname = "0.0.0.0";
+    final VolumeManager fs = VolumeManagerImpl.get();
+    Accumulo.init(fs, serverConf, "monitor-rest");
 
-    if (port > 0) {
-      advertiseHttpAddress(instance, hostname, port);
-    } else {
-      log.info("Could not advertise HTTP address in ZooKeeper");
+    // TODO find a way to pull the address from jersey
+    String hostname = null;
+
+    try {
+      hostname = InetAddress.getLocalHost().getHostName();
+    } catch (Exception e) {
+      log.info("Could not calculate hostname", e);
     }
 
     if (null != hostname) {
-      LogService.startLogListener(Monitor.getSystemConfiguration(), instance.getInstanceID(), hostname);
+      if (port > 0) {
+        advertiseHttpAddress(instance, hostname, port);
+      } else {
+        log.info("Could not advertise HTTP address in ZooKeeper");
+      }
+  
+      // TODO Log messages get forwarded to this service, but aren't being made available to the LogResource
+      // LogService.startLogListener(Monitor.getSystemConfiguration(), instance.getInstanceID(), hostname);
     } else {
       log.warn("Not starting log4j listener as we could not determine address to use");
+      
     }
     
     // Add health checks
@@ -110,8 +125,10 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
     env.jersey().register(new StatisticsResource());
     env.jersey().register(new StatisticsOverTimeResource());
     env.jersey().register(new ProblemsResource());
-    env.jersey().register(new GarbageCollectorResource());
-    env.jersey().register(new LogResource());
+    env.jersey().register(new GarbageCollectorResource())
+
+    // TODO Log messages get forwarded to this service, but aren't being made available to the LogResource
+    // env.jersey().register(new LogResource());
   }
 
   protected void advertiseHttpAddress(Instance instance, String hostname, int port) {
@@ -120,8 +137,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
 
       log.debug("Using " + hostname + " to advertise monitor location in ZooKeeper");
 
-      // TODO Hardcoded port
-      String monitorAddress = HostAndPort.fromParts(hostname, 8080).toString();
+      String monitorAddress = HostAndPort.fromParts(hostname, port).toString();
 
       ZooReaderWriter.getInstance().putPersistentData(ZooUtil.getRoot(instance) + Constants.ZMONITOR_HTTP_ADDR, monitorAddress.getBytes(StandardCharsets.UTF_8),
           NodeExistsPolicy.OVERWRITE);
