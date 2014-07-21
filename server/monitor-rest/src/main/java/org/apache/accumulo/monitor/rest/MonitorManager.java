@@ -14,34 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.wizard.resources;
+package org.apache.accumulo.monitor.rest;
 
-import java.util.Map;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import org.apache.accumulo.monitor.Monitor;
-import org.apache.accumulo.server.problems.ProblemType;
+import io.dropwizard.lifecycle.Managed;
 
 /**
  * 
  */
-@Path("/problems")
-@Produces(MediaType.APPLICATION_JSON)
-public class ProblemsResource {
+public class MonitorManager implements Managed {
 
-  @GET
-  public Map<String,Map<ProblemType,Integer>> getSummary() {
-    return Monitor.getProblemSummary();
+  public MonitorManager() {
+    
   }
 
-  @GET
-  @Path("/exception")
-  public Exception getException() {
-    return Monitor.getProblemException();
+  @Override
+  public void start() throws Exception {
+    
   }
 
+  @Override
+  public void stop() throws Exception {
+    
+  }
 }

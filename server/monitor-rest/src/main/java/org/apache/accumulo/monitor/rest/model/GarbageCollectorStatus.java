@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.wizard.resources;
+package org.apache.accumulo.monitor.rest.model;
 
 import org.apache.accumulo.core.gc.thrift.GCStatus;
 import org.codehaus.jackson.annotate.JsonProperty;

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.wizard;
+package org.apache.accumulo.monitor.rest;
 
 import java.util.List;
 import java.util.Map.Entry;

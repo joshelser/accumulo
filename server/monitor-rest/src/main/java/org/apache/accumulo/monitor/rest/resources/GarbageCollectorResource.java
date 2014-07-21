@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.wizard.resources;
+package org.apache.accumulo.monitor.rest.resources;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -23,6 +23,9 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.accumulo.core.gc.thrift.GCStatus;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.monitor.rest.model.GarbageCollection;
+import org.apache.accumulo.monitor.rest.model.GarbageCollectorCycle;
+import org.apache.accumulo.monitor.rest.model.GarbageCollectorStatus;
 
 /**
  * GarbageCollector metrics
@@ -31,7 +34,6 @@ import org.apache.accumulo.monitor.Monitor;
 @Produces(MediaType.APPLICATION_JSON)
 public class GarbageCollectorResource {
 
-  @Path("/")
   @GET
   public GarbageCollectorStatus getStatus() {
     return new GarbageCollectorStatus(Monitor.getGcStatus());

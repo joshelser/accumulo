@@ -14,26 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.wizard;
+package org.apache.accumulo.monitor.rest;
 
-import io.dropwizard.lifecycle.Managed;
+import io.dropwizard.Configuration;
 
 /**
  * 
  */
-public class MonitorManager implements Managed {
+public class MonitorConfiguration extends Configuration {
 
-  public MonitorManager() {
-    
-  }
-
-  @Override
-  public void start() throws Exception {
-    
-  }
-
-  @Override
-  public void stop() throws Exception {
-    
-  }
 }
