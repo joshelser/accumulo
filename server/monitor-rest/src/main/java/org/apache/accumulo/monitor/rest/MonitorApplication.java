@@ -125,7 +125,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
     env.jersey().register(new StatisticsResource());
     env.jersey().register(new StatisticsOverTimeResource());
     env.jersey().register(new ProblemsResource());
-    env.jersey().register(new GarbageCollectorResource())
+    env.jersey().register(new GarbageCollectorResource());
 
     // TODO Log messages get forwarded to this service, but aren't being made available to the LogResource
     // env.jersey().register(new LogResource());
