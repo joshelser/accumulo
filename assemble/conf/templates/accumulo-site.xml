@@ -97,7 +97,7 @@ ${mvnProjBaseDir}
       $ACCUMULO_HOME/lib/accumulo-start.jar,
       $ACCUMULO_HOME/lib/accumulo-fate.jar,
       $ACCUMULO_HOME/lib/accumulo-proxy.jar,
-      $ACCUMULO_HOME/lib/[^.].*.jar,
+      $ACCUMULO_HOME/lib/(?!accumulo-monitor-rest)[^.].*.jar,
       <!-- End Accumulo requirements -->
 
       <!-- ZooKeeper requirements -->
