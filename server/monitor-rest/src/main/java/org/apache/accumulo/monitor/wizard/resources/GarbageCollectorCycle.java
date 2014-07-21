@@ -23,10 +23,11 @@ import org.codehaus.jackson.annotate.JsonProperty;
  * Metrics about a single cycle of the garbage collector
  */
 public class GarbageCollectorCycle {
+  public static final GarbageCollectorCycle EMPTY = new GarbageCollectorCycle();
 
-  protected long started, finished;
-  protected long candidates, inUse, deleted;
-  protected long errors;
+  protected long started = 0, finished = 0;
+  protected long candidates = 0, inUse = 0, deleted = 0;
+  protected long errors = 0;
 
   public GarbageCollectorCycle() { }
 

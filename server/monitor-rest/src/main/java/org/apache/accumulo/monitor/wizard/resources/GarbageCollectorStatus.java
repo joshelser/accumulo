@@ -23,62 +23,36 @@ import org.codehaus.jackson.annotate.JsonProperty;
  * 
  */
 public class GarbageCollectorStatus {
+  public static final GarbageCollectorStatus EMPTY = new GarbageCollectorStatus();
 
-  protected GarbageCollectorCycle last, current, lastWals, currentWals;
+  protected GarbageCollection fileCollection = new GarbageCollection(), logCollection = new GarbageCollection();
 
   public GarbageCollectorStatus() {}
 
   public GarbageCollectorStatus(GCStatus status) {
     if (null != status) {
-      last = new GarbageCollectorCycle(status.last);
-      current = new GarbageCollectorCycle(status.current);
-      lastWals = new GarbageCollectorCycle(status.lastLog);
-      currentWals = new GarbageCollectorCycle(status.currentLog);
-    } else {
-      last = new GarbageCollectorCycle();
-      current = new GarbageCollectorCycle();
-      lastWals = new GarbageCollectorCycle();
-      currentWals = new GarbageCollectorCycle();
+      fileCollection = new GarbageCollection(status.last, status.current);
+      logCollection = new GarbageCollection(status.lastLog, status.currentLog);
     }
   }
 
-  @JsonProperty("lastCycle")
-  public GarbageCollectorCycle getLastCycle() {
-    return last;
+  @JsonProperty("files")
+  public GarbageCollection getFiles() {
+    return fileCollection;
   }
 
-  @JsonProperty("lastCycle")
-  public void setLastCycle(GarbageCollectorCycle last) {
-    this.last = last;
+  @JsonProperty("files")
+  public void setFiles(GarbageCollection fileCollection) {
+    this.fileCollection = fileCollection;
   }
 
-  @JsonProperty("currentCycle")
-  public GarbageCollectorCycle getCurrentCycle() {
-    return current;
+  @JsonProperty("wals")
+  public GarbageCollection getWals() {
+    return logCollection;
   }
 
-  @JsonProperty("currentCycle")
-  public void setCurrentCycle(GarbageCollectorCycle current) {
-    this.current = current;
-  }
-
-  @JsonProperty("lastWalCycle")
-  public GarbageCollectorCycle getLastWalCycle() {
-    return lastWals;
-  }
-
-  @JsonProperty("lastWalCycle")
-  public void setLastWalCycle(GarbageCollectorCycle lastWals) {
-    this.lastWals = lastWals;
-  }
-
-  @JsonProperty("currentWalCycle")
-  public GarbageCollectorCycle getCurrentWalCycle() {
-    return currentWals;
-  }
-
-  @JsonProperty("currentWalCycle")
-  public void setCurrentWalCycle(GarbageCollectorCycle currentWals) {
-    this.currentWals = currentWals;
+  @JsonProperty("wals")
+  public void setWals(GarbageCollection logCollection) {
+    this.logCollection = logCollection;
   }
 }

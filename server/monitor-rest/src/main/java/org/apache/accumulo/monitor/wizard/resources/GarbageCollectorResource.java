@@ -16,6 +16,7 @@
  */
 package org.apache.accumulo.monitor.wizard.resources;
 
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
@@ -30,31 +31,69 @@ import org.apache.accumulo.monitor.Monitor;
 @Produces(MediaType.APPLICATION_JSON)
 public class GarbageCollectorResource {
 
+  @Path("/")
+  @GET
   public GarbageCollectorStatus getStatus() {
     return new GarbageCollectorStatus(Monitor.getGcStatus());
   }
 
-  @Path("/last")
+  @Path("/files")
+  @GET
+  public GarbageCollection getFileStatus() {
+    GCStatus gcStatus = Monitor.getGcStatus();
+    if (null == gcStatus) {
+      return GarbageCollection.EMPTY;
+    }
+    return new GarbageCollection(gcStatus.last, gcStatus.current);
+  }
+
+  @Path("/files/last")
+  @GET
   public GarbageCollectorCycle getLastCycle() {
     GCStatus status = Monitor.getGcStatus();
+    if (null == status) {
+      return GarbageCollectorCycle.EMPTY;
+    }
     return new GarbageCollectorCycle(status.last);
   }
 
-  @Path("/current")
+  @Path("/files/current")
+  @GET
   public GarbageCollectorCycle getCurrentCycle() {
     GCStatus status = Monitor.getGcStatus();
+    if (null == status) {
+      return GarbageCollectorCycle.EMPTY;
+    }
     return new GarbageCollectorCycle(status.current);
   }
 
+  @Path("/wals")
+  @GET
+  public GarbageCollection getWalStatus() {
+    GCStatus gcStatus = Monitor.getGcStatus();
+    if (null == gcStatus) {
+      return GarbageCollection.EMPTY;
+    }
+    return new GarbageCollection(gcStatus.lastLog, gcStatus.currentLog);
+  }
+
   @Path("/wals/last")
+  @GET
   public GarbageCollectorCycle getLastWalCycle() {
     GCStatus status = Monitor.getGcStatus();
+    if (null == status) {
+      return GarbageCollectorCycle.EMPTY;
+    }
     return new GarbageCollectorCycle(status.lastLog);
   }
 
   @Path("/wals/current")
+  @GET
   public GarbageCollectorCycle getCurrentWalCycle() {
     GCStatus status = Monitor.getGcStatus();
+    if (null == status) {
+      return GarbageCollectorCycle.EMPTY;
+    }
     return new GarbageCollectorCycle(status.currentLog);
   }
 }
