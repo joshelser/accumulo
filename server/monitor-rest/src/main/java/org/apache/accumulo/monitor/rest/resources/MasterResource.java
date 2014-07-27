@@ -16,13 +16,21 @@
  */
 package org.apache.accumulo.monitor.rest.resources;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.accumulo.core.master.thrift.DeadServer;
 import org.apache.accumulo.core.master.thrift.MasterMonitorInfo;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.server.master.state.TabletServerState;
 
 /**
  * 
@@ -41,5 +49,55 @@ public class MasterResource {
     }
 
     return mmi.state.toString();
+  }
+
+  @Path("/state")
+  @GET
+  public String getGoalState() { 
+    MasterMonitorInfo mmi = Monitor.getMmi();
+    if (null == mmi) {
+      return NO_MASTERS;
+    }
+
+    return mmi.goalState.name();
+  }
+
+  @Path("/dead_tservers")
+  @GET
+  public List<DeadServer> getDeadTservers() {
+    MasterMonitorInfo mmi = Monitor.getMmi();
+    if (null == mmi) {
+      return Collections.emptyList();
+    }
+
+    List<DeadServer> deadServers = mmi.deadTabletServers;
+    return null == deadServers ? Collections.<DeadServer> emptyList() : deadServers;
+  }
+
+  @Path("/bad_tservers")
+  @GET
+  public Map<String,String> getNumBadTservers() {
+    MasterMonitorInfo mmi = Monitor.getMmi();
+    if (null == mmi) {
+      return Collections.emptyMap();
+    }
+
+    Map<String,Byte> badServers = mmi.getBadTServers();
+
+    if (null == badServers || badServers.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    Map<String,String> readableBadServers = new HashMap<String,String>();
+    for (Entry<String,Byte> badServer : badServers.entrySet()) {
+      try {
+        TabletServerState state = TabletServerState.getStateById(badServer.getValue());
+        readableBadServers.put(badServer.getKey(), state.name());
+      } catch (IndexOutOfBoundsException e) {
+        readableBadServers.put(badServer.getKey(), "Unknown state");
+      }
+    }
+
+    return readableBadServers;
   }
 }
