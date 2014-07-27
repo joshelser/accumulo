@@ -29,6 +29,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.accumulo.core.master.thrift.DeadServer;
 import org.apache.accumulo.core.master.thrift.MasterMonitorInfo;
+import org.apache.accumulo.core.master.thrift.TabletServerStatus;
 import org.apache.accumulo.monitor.Monitor;
 import org.apache.accumulo.server.master.state.TabletServerState;
 
@@ -40,10 +41,17 @@ import org.apache.accumulo.server.master.state.TabletServerState;
 public class MasterResource {
   public static final String NO_MASTERS = "No Masters running";
 
+  /**
+   * Gets the MasterMonitorInfo, allowing for mocking frameworks for testability
+   */
+  protected MasterMonitorInfo getMmi() {
+    return Monitor.getMmi();
+  }
+
   @Path("/state")
   @GET
   public String getState() {
-    MasterMonitorInfo mmi = Monitor.getMmi();
+    MasterMonitorInfo mmi = getMmi();
     if (null == mmi) {
       return NO_MASTERS;
     }
@@ -51,10 +59,10 @@ public class MasterResource {
     return mmi.state.toString();
   }
 
-  @Path("/state")
+  @Path("/goal_state")
   @GET
   public String getGoalState() { 
-    MasterMonitorInfo mmi = Monitor.getMmi();
+    MasterMonitorInfo mmi = getMmi();
     if (null == mmi) {
       return NO_MASTERS;
     }
@@ -65,7 +73,7 @@ public class MasterResource {
   @Path("/dead_tservers")
   @GET
   public List<DeadServer> getDeadTservers() {
-    MasterMonitorInfo mmi = Monitor.getMmi();
+    MasterMonitorInfo mmi = getMmi();
     if (null == mmi) {
       return Collections.emptyList();
     }
@@ -77,7 +85,7 @@ public class MasterResource {
   @Path("/bad_tservers")
   @GET
   public Map<String,String> getNumBadTservers() {
-    MasterMonitorInfo mmi = Monitor.getMmi();
+    MasterMonitorInfo mmi = getMmi();
     if (null == mmi) {
       return Collections.emptyMap();
     }
@@ -99,5 +107,27 @@ public class MasterResource {
     }
 
     return readableBadServers;
+  }
+
+  @Path("/unassigned_tablets")
+  @GET
+  public int getUnassignedTablets() {
+    MasterMonitorInfo mmi = getMmi();
+    if (null == mmi) {
+      return -1;
+    }
+
+    return mmi.getUnassignedTablets();
+  }
+
+  @Path("/tserver_info")
+  @GET
+  public List<TabletServerStatus> getTabletServerInfo() {
+    MasterMonitorInfo mmi = getMmi();
+    if (null == mmi) {
+      return Collections.emptyList();
+    }
+
+    return mmi.getTServerInfo();
   }
 }
