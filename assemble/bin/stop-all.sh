@@ -55,6 +55,8 @@ for signal in TERM KILL ; do
 
    "${bin}/stop-server.sh" "$MONITOR" "$ACCUMULO_HOME/.*/accumulo-start.*.jar" monitor $signal
 
+   "${bin}/stop-server.sh" "$MONITOR" "$ACCUMULO_HOME/.*/accumulo-monitor-rest.*.jar" monitor-rest $signal
+
    for tracer in $(egrep -v '(^#|^\s*$)' "$ACCUMULO_CONF_DIR/tracers"); do
       "${bin}/stop-server.sh" "$tracer" "$ACCUMULO_HOME/.*/accumulo-start.*.jar" tracer $signal
    done
