@@ -39,6 +39,7 @@ import org.apache.accumulo.monitor.Monitor;
 import org.apache.accumulo.monitor.rest.resources.GarbageCollectorResource;
 import org.apache.accumulo.monitor.rest.resources.MasterResource;
 import org.apache.accumulo.monitor.rest.resources.ProblemsResource;
+import org.apache.accumulo.monitor.rest.resources.ReplicationResource;
 import org.apache.accumulo.monitor.rest.resources.StatisticsOverTimeResource;
 import org.apache.accumulo.monitor.rest.resources.StatisticsResource;
 import org.apache.accumulo.monitor.rest.resources.TablesResource;
@@ -126,6 +127,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
     env.jersey().register(new ProblemsResource());
     env.jersey().register(new GarbageCollectorResource());
     env.jersey().register(new MasterResource());
+    env.jersey().register(new ReplicationResource());
 
     // TODO Log messages get forwarded to this service, but aren't being made available to the LogResource
     // env.jersey().register(new LogResource());
