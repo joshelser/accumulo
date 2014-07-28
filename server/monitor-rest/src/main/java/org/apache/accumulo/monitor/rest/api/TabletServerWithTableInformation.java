@@ -14,36 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.rest.model;
+package org.apache.accumulo.monitor.rest.api;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * 
  */
-public class TabletServerTableInformation extends TabletServerInformation {
+public class TabletServerWithTableInformation {
 
-  private String tableId;
+  private TabletServerInformation tserverInfo;
+  private TableInformation tableInfo;
 
-  public TabletServerTableInformation() {
-    super();
+  public TabletServerWithTableInformation(TabletServerInformation tserverInfo, TableInformation tableInfo) {
+    this.tserverInfo = tserverInfo;
+    this.tableInfo = tableInfo;
   }
 
-  /**
-   * @param tableId
-   */
-  public TabletServerTableInformation(String tableId) {
-    super();
-    this.tableId = tableId;
+  @JsonProperty("tserver")
+  public TabletServerInformation getTserver() {
+    return tserverInfo;
   }
 
-  @JsonProperty("tableId")
-  public String getTableId() {
-    return tableId;
+  @JsonProperty("tserver")
+  public void setTserver(TabletServerInformation tserverInfo) {
+    this.tserverInfo = tserverInfo;
   }
 
-  @JsonProperty("tableId")
-  public void setTableId(String tableId) {
-    this.tableId = tableId;
+  @JsonProperty("table")
+  public TableInformation getTable() {
+    return tableInfo;
+  }
+
+  @JsonProperty("table")
+  public void setTable(TableInformation tableInfo) {
+    this.tableInfo = tableInfo;
   }
 }

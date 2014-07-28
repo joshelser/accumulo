@@ -14,26 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.rest;
+package org.apache.accumulo.monitor.rest.api;
 
-import io.dropwizard.lifecycle.Managed;
+import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * 
  */
-public class MonitorManager implements Managed {
+public class TabletServerTableInformation extends TabletServerInformation {
 
-  public MonitorManager() {
-    
+  private String tableId;
+
+  public TabletServerTableInformation() {
+    super();
   }
 
-  @Override
-  public void start() throws Exception {
-    
+  /**
+   * @param tableId
+   */
+  public TabletServerTableInformation(String tableId) {
+    super();
+    this.tableId = tableId;
   }
 
-  @Override
-  public void stop() throws Exception {
-    
+  @JsonProperty("tableId")
+  public String getTableId() {
+    return tableId;
+  }
+
+  @JsonProperty("tableId")
+  public void setTableId(String tableId) {
+    this.tableId = tableId;
   }
 }

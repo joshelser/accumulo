@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.monitor.rest.model;
+package org.apache.accumulo.monitor.rest.api;
 
 import org.apache.accumulo.core.master.thrift.TableInfo;
 import org.codehaus.jackson.annotate.JsonProperty;

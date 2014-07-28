@@ -23,9 +23,9 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.accumulo.core.gc.thrift.GCStatus;
 import org.apache.accumulo.monitor.Monitor;
-import org.apache.accumulo.monitor.rest.model.GarbageCollection;
-import org.apache.accumulo.monitor.rest.model.GarbageCollectorCycle;
-import org.apache.accumulo.monitor.rest.model.GarbageCollectorStatus;
+import org.apache.accumulo.monitor.rest.api.GarbageCollection;
+import org.apache.accumulo.monitor.rest.api.GarbageCollectorCycle;
+import org.apache.accumulo.monitor.rest.api.GarbageCollectorStatus;
 
 /**
  * GarbageCollector metrics

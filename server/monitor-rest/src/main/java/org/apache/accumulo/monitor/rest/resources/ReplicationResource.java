@@ -50,7 +50,7 @@ import org.apache.accumulo.core.replication.ReplicationSchema.WorkSection;
 import org.apache.accumulo.core.replication.ReplicationTarget;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.Credentials;
-import org.apache.accumulo.monitor.rest.model.ReplicationInformation;
+import org.apache.accumulo.monitor.rest.api.ReplicationInformation;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.security.SystemCredentials;
 import org.apache.hadoop.io.Text;

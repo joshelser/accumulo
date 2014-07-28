@@ -36,6 +36,7 @@ import org.apache.accumulo.core.util.UtilWaitThread;
 import org.apache.accumulo.core.zookeeper.ZooUtil;
 import org.apache.accumulo.fate.zookeeper.ZooUtil.NodeExistsPolicy;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.monitor.rest.health.AccumuloHealthCheck;
 import org.apache.accumulo.monitor.rest.resources.GarbageCollectorResource;
 import org.apache.accumulo.monitor.rest.resources.MasterResource;
 import org.apache.accumulo.monitor.rest.resources.ProblemsResource;

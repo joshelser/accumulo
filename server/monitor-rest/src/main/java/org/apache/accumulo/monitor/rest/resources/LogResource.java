@@ -24,7 +24,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.accumulo.monitor.rest.model.LogEvent;
+import org.apache.accumulo.monitor.rest.api.LogEvent;
 import org.apache.accumulo.server.monitor.DedupedLogEvent;
 import org.apache.accumulo.server.monitor.LogService;
 import org.apache.log4j.spi.LoggingEvent;

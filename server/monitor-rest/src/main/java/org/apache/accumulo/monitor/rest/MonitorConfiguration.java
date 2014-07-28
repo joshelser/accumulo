@@ -23,4 +23,5 @@ import io.dropwizard.Configuration;
  */
 public class MonitorConfiguration extends Configuration {
 
+  // Nothing yet
 }
