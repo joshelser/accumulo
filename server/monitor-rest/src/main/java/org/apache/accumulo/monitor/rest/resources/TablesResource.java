@@ -31,7 +31,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.accumulo.core.client.impl.Tables;
 import org.apache.accumulo.core.master.thrift.TableInfo;
 import org.apache.accumulo.monitor.Monitor;
-import org.apache.accumulo.monitor.rest.model.Table;
+import org.apache.accumulo.monitor.rest.model.TableInformation;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.tables.TableManager;
 import org.apache.accumulo.server.util.TableInfoUtil;
@@ -44,7 +44,7 @@ import org.apache.accumulo.server.util.TableInfoUtil;
 public class TablesResource {
 
   @GET
-  public List<Table> getTables() {
+  public List<TableInformation> getTables() {
     Map<String,String> tidToNameMap = Tables.getIdToNameMap(HdfsZooInstance.getInstance());
     SortedMap<String,TableInfo> tableStats = new TreeMap<String,TableInfo>();
 
@@ -55,35 +55,16 @@ public class TablesResource {
     Map<String,Double> compactingByTable = TableInfoUtil.summarizeTableStats(Monitor.getMmi());
     TableManager tableManager = TableManager.getInstance();
 
-    List<Table> tables = new ArrayList<>();
+    List<TableInformation> tables = new ArrayList<>();
     for (Entry<String,String> entry : Tables.getNameToIdMap(HdfsZooInstance.getInstance()).entrySet()) {
-      Table table = new Table();
       String tableName = entry.getKey(), tableId = entry.getValue();
-      table.setTableName(tableName);
-      table.setTableId(tableId);
       TableInfo tableInfo = tableStats.get(tableName);
       if (null != tableInfo) {
         Double holdTime = compactingByTable.get(tableId);
         if (holdTime == null)
           holdTime = new Double(0.);
 
-        table.setTablets(tableInfo.tablets);
-        table.setTableState(tableManager.getTableState(tableId));
-        table.setOfflineTables(tableInfo.tablets - tableInfo.onlineTablets);
-        table.setEntries(tableInfo.recs);
-        table.setEntriesInMemory(tableInfo.recsInMemory);
-        table.setIngest(tableInfo.ingestRate);
-        table.setEntriesRead(tableInfo.scanRate);
-        table.setEntriesReturned(tableInfo.queryRate);
-        table.setHoldTime(holdTime.longValue());
-        table.setRunningScans(tableInfo.scans.running);
-        table.setQueuedScans(tableInfo.scans.queued);
-        table.setRunningMinorCompactions(tableInfo.minors.running);
-        table.setQueuedMinorCompactions(tableInfo.minors.queued);
-        table.setRunningMajorCompactions(tableInfo.majors.running);
-        table.setQueuedMajorCompactions(tableInfo.majors.queued);
-
-        tables.add(table);
+        tables.add(new TableInformation(tableName, tableId, tableInfo, holdTime, tableManager.getTableState(tableId).name()));
       }
     }
 

@@ -67,7 +67,6 @@ import com.google.common.collect.Maps;
 public class ReplicationResource {
   private static final Logger log = LoggerFactory.getLogger(ReplicationResource.class);
 
-  @Path("/")
   @GET
   public List<ReplicationInformation> getReplicationInformation() throws AccumuloException, AccumuloSecurityException {
     Instance inst = HdfsZooInstance.getInstance();

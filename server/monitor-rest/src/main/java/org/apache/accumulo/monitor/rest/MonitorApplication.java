@@ -43,6 +43,7 @@ import org.apache.accumulo.monitor.rest.resources.ReplicationResource;
 import org.apache.accumulo.monitor.rest.resources.StatisticsOverTimeResource;
 import org.apache.accumulo.monitor.rest.resources.StatisticsResource;
 import org.apache.accumulo.monitor.rest.resources.TablesResource;
+import org.apache.accumulo.monitor.rest.resources.TabletServerResource;
 import org.apache.accumulo.server.Accumulo;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.conf.ServerConfiguration;
@@ -128,6 +129,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
     env.jersey().register(new GarbageCollectorResource());
     env.jersey().register(new MasterResource());
     env.jersey().register(new ReplicationResource());
+    env.jersey().register(new TabletServerResource());
 
     // TODO Log messages get forwarded to this service, but aren't being made available to the LogResource
     // env.jersey().register(new LogResource());
