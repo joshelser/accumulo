@@ -754,4 +754,12 @@ public class Monitor {
   public static boolean isUsingSsl() {
     return server.isUsingSsl();
   }
+
+  public static void setInstance(Instance instance) {
+    Monitor.instance = instance;
+  }
+
+  public static void setConfiguration(ServerConfiguration config) {
+    Monitor.config = config;
+  }
 }

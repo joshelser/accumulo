@@ -59,6 +59,8 @@ fi
 
 ${bin}/start-server.sh $MONITOR monitor 
 
+${bin}/start-server.sh $MONITOR monitor-rest
+
 if [ "$1" != "--notSlaves" ]; then
    ${bin}/tup.sh
 fi

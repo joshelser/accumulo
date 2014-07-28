@@ -29,6 +29,8 @@ script=$( basename "${SOURCE}" )
 . "${bin}"/config.sh
 
 START_JAR="${ACCUMULO_HOME}/lib/accumulo-start.jar"
+MONITOR_REST_JAR="${ACCUMULO_HOME}/lib/accumulo-monitor-rest.jar"
+MONITOR_REST_APP="org.apache.accumulo.monitor.rest.MonitorApplication"
 
 #
 # Resolve a program to its installation directory
@@ -153,14 +155,19 @@ export JAVA_HOME HADOOP_PREFIX ZOOKEEPER_HOME LD_LIBRARY_PATH DYLD_LIBRARY_PATH
 #
 # app isn't used anywhere, but it makes the process easier to spot when ps/top/snmp truncate the command line
 JAVA="${JAVA_HOME}/bin/java"
-exec "$JAVA" "-Dapp=$1" \
-   $ACCUMULO_OPTS \
-   -classpath "${CLASSPATH}" \
-   -XX:OnOutOfMemoryError="${ACCUMULO_KILL_CMD:-kill -9 %p}" \
-   -XX:-OmitStackTraceInFastThrow \
-   -Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl \
-   -Dorg.apache.accumulo.core.home.dir="${ACCUMULO_HOME}" \
-   -Dhadoop.home.dir="${HADOOP_PREFIX}" \
-   -Dzookeeper.home.dir="${ZOOKEEPER_HOME}" \
-   org.apache.accumulo.start.Main \
-   "$@"
+
+if [[ "$1" == "monitor-rest" ]]; then
+  exec "$JAVA" "-Dapp=$1" -classpath "${HADOOP_CONF_DIR}:${ACCUMULO_CONF_DIR}:${MONITOR_REST_JAR}" "${MONITOR_REST_APP}" server
+else
+  exec "$JAVA" "-Dapp=$1" \
+     $ACCUMULO_OPTS \
+     -classpath "${CLASSPATH}" \
+     -XX:OnOutOfMemoryError="${ACCUMULO_KILL_CMD:-kill -9 %p}" \
+     -XX:-OmitStackTraceInFastThrow \
+     -Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl \
+     -Dorg.apache.accumulo.core.home.dir="${ACCUMULO_HOME}" \
+     -Dhadoop.home.dir="${HADOOP_PREFIX}" \
+     -Dzookeeper.home.dir="${ZOOKEEPER_HOME}" \
+     org.apache.accumulo.start.Main \
+     "$@"
+fi
