@@ -27,27 +27,85 @@
       <useTransitiveDependencies>false</useTransitiveDependencies>
       <includes>
         <include>${groupId}:${artifactId}-*</include>
+        <include>ch.qos.logback:logback-classic</include>
+        <include>ch.qos.logback:logback-core</include>
         <include>com.beust:jcommander</include>
+        <include>com.codahale.metrics:metrics-annotation</include>
+        <include>com.codahale.metrics:metrics-core</include>
+        <include>com.codahale.metrics:metrics-healthchecks</include>
+        <include>com.codahale.metrics:metrics-jersey</include>
+        <include>com.codahale.metrics:metrics-jetty9</include>
+        <include>com.codahale.metrics:metrics-json</include>
+        <include>com.codahale.metrics:metrics-jvm</include>
+        <include>com.codahale.metrics:metrics-logback</include>
+        <include>com.codahale.metrics:metrics-servlets</include>
+        <include>com.fasterxml.jackson.core:jackson-annotations</include>
+        <include>com.fasterxml.jackson.core:jackson-core</include>
+        <include>com.fasterxml.jackson.core:jackson-databind</include>
+        <include>com.fasterxml.jackson.dataformat:jackson-dataformat-yaml</include>
+        <include>com.fasterxml.jackson.datatype:jackson-datatype-guava</include>
+        <include>com.fasterxml.jackson.datatype:jackson-datatype-joda</include>
+        <include>com.fasterxml.jackson.jaxrs:jackson-jaxrs-base</include>
+        <include>com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider</include>
+        <include>com.fasterxml.jackson.module:jackson-module-afterburner</include>
+        <include>com.fasterxml.jackson.module:jackson-module-jaxb-annotations</include>
+        <include>com.fasterxml:classmate</include>
         <include>com.google.code.gson:gson</include>
         <include>com.google.guava:guava</include>
         <include>com.google.protobuf:protobuf-java</include>
+        <include>com.sun.jersey:jersey-core</include>
+        <include>com.sun.jersey:jersey-server</include>
+        <include>com.sun.jersey:jersey-servlet</include>
+        <include>io.dropwizard:dropwizard-configuration</include>
+        <include>io.dropwizard:dropwizard-core</include>
+        <include>io.dropwizard:dropwizard-jackson</include>
+        <include>io.dropwizard:dropwizard-jersey</include>
+        <include>io.dropwizard:dropwizard-jetty</include>
+        <include>io.dropwizard:dropwizard-lifecycle</include>
+        <include>io.dropwizard:dropwizard-logging</include>
+        <include>io.dropwizard:dropwizard-metrics</include>
+        <include>io.dropwizard:dropwizard-servlets</include>
+        <include>io.dropwizard:dropwizard-util</include>
+        <include>io.dropwizard:dropwizard-validation</include>
+        <include>javax.el:javax.el-api</include>
         <include>javax.servlet:javax.servlet-api</include>
+        <include>javax.validation:validation-api</include>
         <include>jline:jline</include>
+        <include>joda-time:joda-time</include>
+        <include>net.sourceforge.argparse4j:argparse4j</include>
         <include>org.apache.commons:commons-math</include>
         <include>org.apache.commons:commons-vfs2</include>
         <include>org.apache.thrift:libthrift</include>
+        <include>org.eclipse.jetty.orbit:javax.servlet</include>
+        <include>org.eclipse.jetty.toolchain.setuid:jetty-setuid-java</include>
         <include>org.eclipse.jetty:jetty-http</include>
         <include>org.eclipse.jetty:jetty-io</include>
         <include>org.eclipse.jetty:jetty-security</include>
         <include>org.eclipse.jetty:jetty-server</include>
         <include>org.eclipse.jetty:jetty-servlet</include>
+        <include>org.eclipse.jetty:jetty-servlets</include>
         <include>org.eclipse.jetty:jetty-util</include>
+        <include>org.glassfish.web:javax.el</include>
+        <include>org.hibernate:hibernate-validator</include>
+        <include>org.jboss.logging:jboss-logging</include>
+        <include>org.slf4j:jul-to-slf4j</include>
         <include>org.slf4j:slf4j-api</include>
         <include>org.slf4j:slf4j-log4j12</include>
       </includes>
       <excludes>
         <exclude>${groupId}:${artifactId}-docs</exclude>
       </excludes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0644</fileMode>
+      <outputFileNameMapping>${artifact.artifactId}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
+      <useTransitiveDependencies>true</useTransitiveDependencies>
+      <useTransitiveFiltering>false</useTransitiveFiltering>
+      <includes>
+        <include>io.dropwizard:dropwizard-core</include>
+      </includes>
     </dependencySet>
     <dependencySet>
       <outputDirectory>docs</outputDirectory>

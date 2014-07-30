@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+# /usr/bin/env bash
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -157,7 +157,17 @@ export JAVA_HOME HADOOP_PREFIX ZOOKEEPER_HOME LD_LIBRARY_PATH DYLD_LIBRARY_PATH
 JAVA="${JAVA_HOME}/bin/java"
 
 if [[ "$1" == "monitor-rest" ]]; then
-  exec "$JAVA" "-Dapp=$1" -classpath "${HADOOP_CONF_DIR}:${ACCUMULO_CONF_DIR}:${MONITOR_REST_JAR}" "${MONITOR_REST_APP}" server
+  exec "$JAVA" "-Dapp=$1" \
+     $ACCUMULO_OPTS \
+     -classpath "${HADOOP_CONF_DIR}:${ACCUMULO_CONF_DIR}:${ACCUMULO_HOME}/lib/*:$HADOOP_PREFIX/share/hadoop/common/*:$HADOOP_PREFIX/share/hadoop/common/lib/*:$HADOOP_PREFIX/share/hadoop/hdfs/*" \
+     -XX:OnOutOfMemoryError="${ACCUMULO_KILL_CMD:-kill -9 %p}" \
+     -XX:-OmitStackTraceInFastThrow \
+     -Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl \
+     -Dorg.apache.accumulo.core.home.dir="${ACCUMULO_HOME}" \
+     -Dhadoop.home.dir="${HADOOP_PREFIX}" \
+     -Dzookeeper.home.dir="${ZOOKEEPER_HOME}" \
+     "${MONITOR_REST_APP}" \
+     "server"
 else
   exec "$JAVA" "-Dapp=$1" \
      $ACCUMULO_OPTS \
