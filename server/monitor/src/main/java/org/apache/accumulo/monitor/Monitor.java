@@ -760,7 +760,7 @@ public class Monitor {
     Monitor.instance = instance;
   }
 
-  public static void setConfiguration(ServerConfiguration config) {
+  public static void setConfiguration(ServerConfigurationFactory config) {
     Monitor.config = config;
   }
 }

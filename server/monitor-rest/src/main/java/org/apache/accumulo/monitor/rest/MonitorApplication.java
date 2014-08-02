@@ -47,7 +47,7 @@ import org.apache.accumulo.monitor.rest.resources.TablesResource;
 import org.apache.accumulo.monitor.rest.resources.TabletServerResource;
 import org.apache.accumulo.server.Accumulo;
 import org.apache.accumulo.server.client.HdfsZooInstance;
-import org.apache.accumulo.server.conf.ServerConfiguration;
+import org.apache.accumulo.server.conf.ServerConfigurationFactory;
 import org.apache.accumulo.server.fs.VolumeManager;
 import org.apache.accumulo.server.fs.VolumeManagerImpl;
 import org.apache.accumulo.server.zookeeper.ZooReaderWriter;
@@ -72,7 +72,7 @@ public class MonitorApplication extends Application<MonitorConfiguration> {
     final int port = getApplicationHttpPort(conf);
     Instance instance = HdfsZooInstance.getInstance();
     Monitor.setInstance(instance);
-    ServerConfiguration serverConf = new ServerConfiguration(instance);
+    ServerConfigurationFactory serverConf = new ServerConfigurationFactory(instance);
     Monitor.setConfiguration(serverConf);
 
     // need to regularly fetch data so plot data is updated
