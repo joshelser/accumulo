@@ -21,7 +21,7 @@
     <groupId>org.apache.accumulo</groupId>
     <artifactId>accumulo-project</artifactId>
     <version>1.7.0-SNAPSHOT</version>
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>accumulo-monitor-rest</artifactId>
   <name>Monitor Server</name>
@@ -68,6 +68,10 @@
     <dependency>
       <groupId>org.apache.accumulo</groupId>
       <artifactId>accumulo-monitor</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.accumulo</groupId>
+      <artifactId>accumulo-monitor-rest-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

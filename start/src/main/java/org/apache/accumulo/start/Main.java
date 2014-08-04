@@ -75,6 +75,9 @@ public class Main {
         case "monitor":
           runTMP = cl.loadClass("org.apache.accumulo.monitor.Monitor");
           break;
+        case "monitor-rest":
+          runTMP = cl.loadClass("org.apache.acumulo.monitor.rest.MonitorApplication");
+          break;
         case "tracer":
           runTMP = cl.loadClass("org.apache.accumulo.tracer.TraceServer");
           break;
