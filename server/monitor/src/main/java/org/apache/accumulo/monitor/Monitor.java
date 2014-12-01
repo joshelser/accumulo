@@ -569,7 +569,7 @@ public class Monitor {
     }
   }
 
-  protected static void fetchScans() throws Exception {
+  public static void fetchScans() throws Exception {
     if (instance == null)
       return;
     Connector c = context.getConnector();
