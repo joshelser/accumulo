@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.accumulo.core.util;
+package org.apache.accumulo.core.rpc;
 
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;

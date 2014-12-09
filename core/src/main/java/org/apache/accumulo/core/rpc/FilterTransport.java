@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.accumulo.core.util;
+package org.apache.accumulo.core.rpc;
 
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
