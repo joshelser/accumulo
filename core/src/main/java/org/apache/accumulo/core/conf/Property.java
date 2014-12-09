@@ -147,6 +147,8 @@ public enum Property {
       PropertyType.CLASSNAME, "The permission handler class that accumulo will use to determine if a user has privilege to perform an action"),
   INSTANCE_RPC_SSL_ENABLED("instance.rpc.ssl.enabled", "false", PropertyType.BOOLEAN, "Use SSL for socket connections from clients and among accumulo services"),
   INSTANCE_RPC_SSL_CLIENT_AUTH("instance.rpc.ssl.clientAuth", "false", PropertyType.BOOLEAN, "Require clients to present certs signed by a trusted root"),
+  INSTANCE_RPC_KERBEROS_SECURED("instance.rpc.kerberos.secured", "false", PropertyType.BOOLEAN,
+      "Require Thrift RPCs to include Kerberos credentials via Hadoop's UserGroupInformation"),
 
   // general properties
   GENERAL_PREFIX("general.", null, PropertyType.PREFIX,

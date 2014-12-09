@@ -47,6 +47,7 @@ import org.apache.accumulo.core.tabletserver.thrift.TabletClientService;
 import org.apache.accumulo.core.trace.Span;
 import org.apache.accumulo.core.trace.Trace;
 import org.apache.accumulo.core.util.UtilWaitThread;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.TServiceClient;
@@ -195,19 +196,26 @@ public class ThriftUtil {
 
   private final static Map<Integer,TTransportFactory> factoryCache = new HashMap<Integer,TTransportFactory>();
 
-  synchronized public static TTransportFactory transportFactory(int maxFrameSize) {
+  synchronized public static TTransportFactory transportFactory(int maxFrameSize, boolean kerberosSecured) {
     TTransportFactory factory = factoryCache.get(maxFrameSize);
     if (factory == null) {
       factory = new TFramedTransport.Factory(maxFrameSize);
       factoryCache.put(maxFrameSize, factory);
     }
+    if (kerberosSecured) {
+      try {
+        factory = new UGIAssumingTransportFactory(factory, UserGroupInformation.getCurrentUser());
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to login", e);
+      }
+    }
     return factory;
   }
 
-  synchronized public static TTransportFactory transportFactory(long maxFrameSize) {
+  synchronized public static TTransportFactory transportFactory(long maxFrameSize, boolean kerberosSecured) {
     if (maxFrameSize > Integer.MAX_VALUE || maxFrameSize < 1)
       throw new RuntimeException("Thrift transport frames are limited to " + Integer.MAX_VALUE);
-    return transportFactory((int) maxFrameSize);
+    return transportFactory((int) maxFrameSize, kerberosSecured);
   }
 
   public static TProtocolFactory protocolFactory() {

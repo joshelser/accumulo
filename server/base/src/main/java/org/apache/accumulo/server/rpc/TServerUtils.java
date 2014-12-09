@@ -82,6 +82,13 @@ public class TServerUtils {
     boolean portSearch = false;
     if (portSearchProperty != null)
       portSearch = service.getConfiguration().getBoolean(portSearchProperty);
+    final boolean kerberosSecured = service.getConfiguration().getBoolean(Property.INSTANCE_RPC_KERBEROS_SECURED);
+    if (kerberosSecured) {
+      // Wrap the provided processor in our special processor which proxies the provided UGI on the logged-in UGI
+      // Important that we have Timed -> UGIAssuming -> [provided] to make sure that the metrics are still reported
+      // as the logged-in user.
+      processor = new UGIAssumingProcessor(processor);
+    }
     // create the TimedProcessor outside the port search loop so we don't try to register the same metrics mbean more than once
     TimedProcessor timedProcessor = new TimedProcessor(service.getConfiguration(), processor, serverName, threadName);
     Random random = new Random();
@@ -102,7 +109,7 @@ public class TServerUtils {
           HostAndPort addr = HostAndPort.fromParts(address, port);
           return TServerUtils.startTServer(addr, timedProcessor, serverName, threadName, minThreads,
               service.getConfiguration().getCount(Property.GENERAL_SIMPLETIMER_THREADPOOL_SIZE), timeBetweenThreadChecks, maxMessageSize,
-              service.getServerSslParams(), service.getClientTimeoutInMillis());
+              service.getServerSslParams(), service.getClientTimeoutInMillis(), kerberosSecured);
         } catch (TTransportException ex) {
           log.error("Unable to start TServer", ex);
           if (ex.getCause() == null || ex.getCause().getClass() == BindException.class) {
@@ -127,11 +134,11 @@ public class TServerUtils {
    * Create a NonBlockingServer with a custom thread pool that can dynamically resize itself.
    */
   public static ServerAddress createNonBlockingServer(HostAndPort address, TProcessor processor, final String serverName, String threadName,
-      final int numThreads, final int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize) throws TTransportException {
+      final int numThreads, final int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize, boolean kerberosSecured) throws TTransportException {
     TNonblockingServerSocket transport = new TNonblockingServerSocket(new InetSocketAddress(address.getHostText(), address.getPort()));
     CustomNonBlockingServer.Args options = new CustomNonBlockingServer.Args(transport);
     options.protocolFactory(ThriftUtil.protocolFactory());
-    options.transportFactory(ThriftUtil.transportFactory(maxMessageSize));
+    options.transportFactory(ThriftUtil.transportFactory(maxMessageSize, kerberosSecured));
     options.maxReadBufferBytes = maxMessageSize;
     options.stopTimeoutVal(5);
     /*
@@ -178,7 +185,8 @@ public class TServerUtils {
     return new TThreadPoolServer(options);
   }
 
-  public static ServerAddress createSslThreadPoolServer(HostAndPort address, TProcessor processor, long socketTimeout, SslConnectionParams sslParams)
+  public static ServerAddress createSslThreadPoolServer(HostAndPort address, TProcessor processor, long socketTimeout, SslConnectionParams sslParams,
+      boolean kerberosSecured)
       throws TTransportException {
     org.apache.thrift.transport.TServerSocket transport;
     try {
@@ -193,9 +201,11 @@ public class TServerUtils {
   }
 
   public static ServerAddress startTServer(AccumuloConfiguration conf, HostAndPort address, TProcessor processor, String serverName, String threadName, int numThreads, int numSTThreads,
-      long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, long sslSocketTimeout) throws TTransportException {
+ long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, long sslSocketTimeout)
+      throws TTransportException {
+    final boolean kerberosSecured = conf.getBoolean(Property.INSTANCE_RPC_KERBEROS_SECURED);
     return startTServer(address, new TimedProcessor(conf, processor, serverName, threadName), serverName, threadName, numThreads, numSTThreads,
-        timeBetweenThreadChecks, maxMessageSize, sslParams, sslSocketTimeout);
+        timeBetweenThreadChecks, maxMessageSize, sslParams, sslSocketTimeout, kerberosSecured);
   }
 
   /**
@@ -204,13 +214,15 @@ public class TServerUtils {
    * @return A ServerAddress encapsulating the Thrift server created and the host/port which it is bound to.
    */
   public static ServerAddress startTServer(HostAndPort address, TimedProcessor processor, String serverName, String threadName, int numThreads,
-    int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, long sslSocketTimeout) throws TTransportException {
+      int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, long sslSocketTimeout, boolean kerberosSecured)
+      throws TTransportException {
 
     ServerAddress serverAddress;
     if (sslParams != null) {
-      serverAddress = createSslThreadPoolServer(address, processor, sslSocketTimeout, sslParams);
+      serverAddress = createSslThreadPoolServer(address, processor, sslSocketTimeout, sslParams, kerberosSecured);
     } else {
-      serverAddress = createNonBlockingServer(address, processor, serverName, threadName, numThreads, numSTThreads, timeBetweenThreadChecks, maxMessageSize);
+      serverAddress = createNonBlockingServer(address, processor, serverName, threadName, numThreads, numSTThreads, timeBetweenThreadChecks, maxMessageSize,
+          kerberosSecured);
     }
     final TServer finalServer = serverAddress.server;
     Runnable serveTask = new Runnable() {
