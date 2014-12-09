@@ -65,7 +65,7 @@ public class UGIAssumingProcessor implements TProcessor {
       throw new TException(e);
     }
     final String remoteUser = clientUgi.getShortUserName();
-    
+
     // Set the principal in the ThreadLocal for access to get authorizations
     principal.set(remoteUser);
 
