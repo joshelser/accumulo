@@ -17,11 +17,9 @@
 package org.apache.accumulo.server.thrift;
 
 import java.io.IOException;
-import java.security.PrivilegedExceptionAction;
 
 import javax.security.sasl.SaslServer;
 
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
@@ -40,7 +38,9 @@ import org.slf4j.LoggerFactory;
  */
 public class UGIAssumingProcessor implements TProcessor {
   private static final Logger log = LoggerFactory.getLogger(UGIAssumingProcessor.class);
-  final TProcessor wrapped;
+
+  public static final ThreadLocal<String> principal = new ThreadLocal<String>();
+  private final TProcessor wrapped;
 
   public UGIAssumingProcessor(TProcessor wrapped) {
     this.wrapped = wrapped;
@@ -60,35 +60,15 @@ public class UGIAssumingProcessor implements TProcessor {
     UserGroupInformation clientUgi = null;
     try {
       clientUgi = UserGroupInformation.createProxyUser(endUser, UserGroupInformation.getLoginUser());
-      final String remoteUser = clientUgi.getShortUserName();
-      log.debug("Executing action as {}", remoteUser);
-      return clientUgi.doAs(new PrivilegedExceptionAction<Boolean>() {
-        @Override
-        public Boolean run() {
-          try {
-            return wrapped.process(inProt, outProt);
-          } catch (TException te) {
-            throw new RuntimeException(te);
-          }
-        }
-      });
-    } catch (RuntimeException rte) {
-      if (rte.getCause() instanceof TException) {
-        log.error("Failed to invoke wrapped processor", rte.getCause());
-        throw (TException) rte.getCause();
-      }
-      throw rte;
-    } catch (InterruptedException | IOException e) {
-      log.error("Failed to invoke wrapped processor", e);
-      throw new RuntimeException(e);
-    } finally {
-      if (clientUgi != null) {
-        try {
-          FileSystem.closeAllForUGI(clientUgi);
-        } catch (IOException exception) {
-          log.error("Could not clean up file-system handles for UGI: {}", clientUgi, exception);
-        }
-      }
+    } catch (IOException e) {
+      log.error("Failed to proxy as {}", endUser, e);
+      throw new TException(e);
     }
+    final String remoteUser = clientUgi.getShortUserName();
+    
+    // Set the principal in the ThreadLocal for access to get authorizations
+    principal.set(remoteUser);
+
+    return wrapped.process(inProt, outProt);
   }
 }

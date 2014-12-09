@@ -2271,6 +2271,7 @@ public class TabletServer extends AccumuloServerContext implements Runnable {
 
   private HostAndPort startTabletClientService() throws UnknownHostException {
     // start listening for client connection last
+    // TODO Wrap ThriftClientHandler in such a way to override the TCredentials with the KRB principal from the UGIAssumingProcessor
     Iface tch = RpcWrapper.service(new ThriftClientHandler());
     Processor<Iface> processor = new Processor<Iface>(tch);
     HostAndPort address = startServer(getServerConfigurationFactory().getConfiguration(), clientAddress.getHostText(), Property.TSERV_CLIENTPORT, processor,
