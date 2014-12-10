@@ -83,7 +83,7 @@ public class TServerUtils {
     boolean portSearch = false;
     if (portSearchProperty != null)
       portSearch = service.getConfiguration().getBoolean(portSearchProperty);
-    final boolean kerberosSecured = service.getConfiguration().getBoolean(Property.INSTANCE_RPC_KERBEROS_SECURED);
+    final boolean kerberosSecured = service.getConfiguration().getBoolean(Property.INSTANCE_RPC_SASL_ENABLED);
     if (kerberosSecured) {
       // Wrap the provided processor in our special processor which proxies the provided UGI on the logged-in UGI
       // Important that we have Timed -> UGIAssuming -> [provided] to make sure that the metrics are still reported
@@ -204,7 +204,7 @@ public class TServerUtils {
   public static ServerAddress startTServer(AccumuloConfiguration conf, HostAndPort address, TProcessor processor, String serverName, String threadName, int numThreads, int numSTThreads,
  long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, long sslSocketTimeout)
       throws TTransportException {
-    final boolean kerberosSecured = conf.getBoolean(Property.INSTANCE_RPC_KERBEROS_SECURED);
+    final boolean kerberosSecured = conf.getBoolean(Property.INSTANCE_RPC_SASL_ENABLED);
     return startTServer(address, new TimedProcessor(conf, processor, serverName, threadName), serverName, threadName, numThreads, numSTThreads,
         timeBetweenThreadChecks, maxMessageSize, sslParams, sslSocketTimeout, kerberosSecured);
   }

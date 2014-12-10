@@ -58,6 +58,7 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSSLTransportFactory;
+import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
@@ -101,13 +102,14 @@ public class ThriftUtil {
 
   static private TProtocolFactory protocolFactory = new TraceProtocolFactory();
   static private TTransportFactory transportFactory = new TFramedTransport.Factory(Integer.MAX_VALUE);
+  private static final String GSSAPI = "GSSAPI";
 
   static public <T extends TServiceClient> T createClient(TServiceClientFactory<T> factory, TTransport transport) {
     return factory.getClient(protocolFactory.getProtocol(transport), protocolFactory.getProtocol(transport));
   }
 
   static public <T extends TServiceClient> T getClient(TServiceClientFactory<T> factory, HostAndPort address, ClientContext context)
-      throws TTransportException {
+ throws TTransportException {
     return createClient(factory, ThriftTransportPool.getInstance().getTransportWithDefaultTimeout(address, context));
   }
 
@@ -116,8 +118,7 @@ public class ThriftUtil {
     return getClient(factory, address, context, 0);
   }
 
-  static public <T extends TServiceClient> T getClient(TServiceClientFactory<T> factory, String address, ClientContext context)
-      throws TTransportException {
+  static public <T extends TServiceClient> T getClient(TServiceClientFactory<T> factory, String address, ClientContext context) throws TTransportException {
     TTransport transport = ThriftTransportPool.getInstance().getTransport(address, context.getClientTimeoutInMillis(), context);
     return createClient(factory, transport);
   }
@@ -187,7 +188,7 @@ public class ThriftUtil {
    * create a transport that is not pooled
    */
   public static TTransport createTransport(HostAndPort address, ClientContext context) throws TException {
-    return createClientTransport(address, (int) context.getClientTimeoutInMillis(), context.getClientSslParams());
+    return createClientTransport(address, (int) context.getClientTimeoutInMillis(), context.getClientSslParams(), context.getClientSaslParams());
   }
 
   public static TTransportFactory transportFactory() {
@@ -253,7 +254,8 @@ public class ThriftUtil {
     return tServerSock;
   }
 
-  public static TTransport createClientTransport(HostAndPort address, int timeout, SslConnectionParams sslParams) throws TTransportException {
+  public static TTransport createClientTransport(HostAndPort address, int timeout, SslConnectionParams sslParams, SaslConnectionParams saslParams)
+      throws TTransportException {
     boolean success = false;
     TTransport transport = null;
     try {
@@ -279,15 +281,43 @@ public class ThriftUtil {
           transport = createClient(wrappingSslSockFactory, address.getHostText(), address.getPort(), timeout);
         }
         // TSSLTransportFactory leaves transports open, so no need to open here
-      } else if (timeout == 0) {
-        transport = new TSocket(address.getHostText(), address.getPort());
-        transport.open();
       } else {
-        try {
-          transport = TTimeoutTransport.create(address, timeout);
-        } catch (IOException ex) {
-          throw new TTransportException(ex);
+        if (timeout == 0) {
+          transport = new TSocket(address.getHostText(), address.getPort());
+          transport.open();
+        } else {
+          try {
+            transport = TTimeoutTransport.create(address, timeout);
+          } catch (IOException ex) {
+            throw new TTransportException(ex);
+          }
         }
+
+        // If we have sasl params, set up that transport
+        if (saslParams != null) {
+          // TODO Do we want to fail loudly here? Is it ok to let this pass through on a mismatch?
+          if (UserGroupInformation.isSecurityEnabled()) {
+            throw new IllegalStateException("Expected Kerberos security to be enabled if SASL is in use");
+          }
+
+          try {
+            // Log in via UGI, ensures we have logged in with our KRB credentials
+            final UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
+
+            // Create the client SASL transport using the information for the server
+            // TODO Must ensure that address.getHostText() is the same as the Kerberos instance from the principal otherwise handshake will fail
+            transport = new TSaslClientTransport(GSSAPI, null, saslParams.getKerberosServerPrimary(), address.getHostText(), saslParams.getSaslProperties(),
+                null, transport);
+
+            // Wrap it all in a processor which will run with a doAs the current user
+            transport = new UGIAssumingTransport(transport, currentUser);
+          } catch (IOException e) {
+            log.error("Failed to open SASL transport", e);
+            throw new TTransportException(e);
+          }
+        }
+
+        // Open the transport
         transport.open();
       }
       transport = ThriftUtil.transportFactory().getTransport(transport);

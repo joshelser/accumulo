@@ -17,6 +17,7 @@
 package org.apache.accumulo.core.client;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
 import java.io.File;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -46,6 +47,7 @@ public class ClientConfiguration extends CompositeConfiguration {
   public static final String GLOBAL_CONF_FILENAME = "client.conf";
 
   public enum ClientProperty {
+    // SSL
     RPC_SSL_TRUSTSTORE_PATH(Property.RPC_SSL_TRUSTSTORE_PATH),
     RPC_SSL_TRUSTSTORE_PASSWORD(Property.RPC_SSL_TRUSTSTORE_PASSWORD),
     RPC_SSL_TRUSTSTORE_TYPE(Property.RPC_SSL_TRUSTSTORE_TYPE),
@@ -56,13 +58,24 @@ public class ClientConfiguration extends CompositeConfiguration {
     GENERAL_SECURITY_CREDENTIAL_PROVIDER_PATHS(Property.GENERAL_SECURITY_CREDENTIAL_PROVIDER_PATHS),
     INSTANCE_RPC_SSL_CLIENT_AUTH(Property.INSTANCE_RPC_SSL_CLIENT_AUTH),
     INSTANCE_RPC_SSL_ENABLED(Property.INSTANCE_RPC_SSL_ENABLED),
+
+    // ZooKeeper
     INSTANCE_ZK_HOST(Property.INSTANCE_ZK_HOST),
     INSTANCE_ZK_TIMEOUT(Property.INSTANCE_ZK_TIMEOUT),
+
+    // Instance information
     INSTANCE_NAME("instance.name", null, PropertyType.STRING, "Name of Accumulo instance to connect to"),
     INSTANCE_ID("instance.id", null, PropertyType.STRING, "UUID of Accumulo instance to connect to"),
+
+    // Tracing
     TRACE_SPAN_RECEIVERS(Property.TRACE_SPAN_RECEIVERS),
     TRACE_SPAN_RECEIVER_PREFIX(Property.TRACE_SPAN_RECEIVER_PREFIX),
-    TRACE_ZK_PATH(Property.TRACE_ZK_PATH);
+    TRACE_ZK_PATH(Property.TRACE_ZK_PATH),
+
+    // SASL / GSSAPI(Kerberos)
+    INSTANCE_RPC_SASL_ENABLED(Property.INSTANCE_RPC_SASL_ENABLED),
+    RPC_SASL_QOP(Property.RPC_SASL_QOP),
+    RPC_KERBEROS_PRIMARY(Property.RPC_KERBEROS_PRIMARY);
 
     private String key;
     private String defaultValue;

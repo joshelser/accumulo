@@ -105,6 +105,11 @@ public enum Property {
   // TLSv1.2 should be used as the default when JDK6 support is dropped
   RPC_SSL_CLIENT_PROTOCOL("rpc.ssl.client.protocol", "TLSv1", PropertyType.STRING,
       "The protocol used to connect to a secure server, must be in the list of enabled protocols on the server side (rpc.ssl.server.enabled.protocols)"),
+  RPC_SASL_QOP("rpc.sasl.qop", "auth", PropertyType.STRING,
+      "The quality of protection to be used with SASL. Valid values are 'auth', 'auth-int', and 'auth-conf'"),
+  // RPC_KERBEROS_REALM("rpc.kerberos.realm", "EXAMPLE.COM", PropertyType.STRING, "The realm section of the Kerberos principal for servers"),
+  RPC_KERBEROS_PRIMARY("rpc.kerberos.primary", "accumulo", PropertyType.STRING,
+      "The first component, before the first '/', of the Kerberos principal used by servers"),
 
   // instance properties (must be the same for every node in an instance)
   INSTANCE_PREFIX("instance.", null, PropertyType.PREFIX,
@@ -147,8 +152,8 @@ public enum Property {
       PropertyType.CLASSNAME, "The permission handler class that accumulo will use to determine if a user has privilege to perform an action"),
   INSTANCE_RPC_SSL_ENABLED("instance.rpc.ssl.enabled", "false", PropertyType.BOOLEAN, "Use SSL for socket connections from clients and among accumulo services"),
   INSTANCE_RPC_SSL_CLIENT_AUTH("instance.rpc.ssl.clientAuth", "false", PropertyType.BOOLEAN, "Require clients to present certs signed by a trusted root"),
-  INSTANCE_RPC_KERBEROS_SECURED("instance.rpc.kerberos.secured", "false", PropertyType.BOOLEAN,
-      "Require Thrift RPCs to include Kerberos credentials via Hadoop's UserGroupInformation"),
+  INSTANCE_RPC_SASL_ENABLED("instance.rpc.sasl.enabled", "false", PropertyType.BOOLEAN,
+      "Configures Thrift RPCs to use SASL which allows for Kerberos credentials via Hadoop's UserGroupInformation"),
 
   // general properties
   GENERAL_PREFIX("general.", null, PropertyType.PREFIX,

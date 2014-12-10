@@ -33,6 +33,7 @@ import org.apache.accumulo.core.conf.AccumuloConfiguration;
 import org.apache.accumulo.core.conf.CredentialProviderFactoryShim;
 import org.apache.accumulo.core.conf.DefaultConfiguration;
 import org.apache.accumulo.core.conf.Property;
+import org.apache.accumulo.core.rpc.SaslConnectionParams;
 import org.apache.accumulo.core.rpc.SslConnectionParams;
 import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.core.security.thrift.TCredentials;
@@ -112,6 +113,13 @@ public class ClientContext {
    */
   public SslConnectionParams getClientSslParams() {
     return SslConnectionParams.forClient(getConfiguration());
+  }
+
+  /**
+   * Retrieve SASL configuration to initiate an RPC connection to a server
+   */
+  public SaslConnectionParams getClientSaslParams() {
+    return SaslConnectionParams.forConfig(getConfiguration());
   }
 
   /**
