@@ -32,6 +32,7 @@ import com.google.common.base.Preconditions;
  * Authentication token for kerberos authenticated users
  */
 public class KerberosToken implements AuthenticationToken {
+  public static final String CLASS_NAME = KerberosToken.class.getName();
 
   private UserGroupInformation ugi;
 
