@@ -304,9 +304,12 @@ public class ThriftUtil {
             // Log in via UGI, ensures we have logged in with our KRB credentials
             final UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
 
+            // Is this pricey enough that we want to cache it?
+            final String hostname = InetAddress.getByName(address.getHostText()).getCanonicalHostName();
+
             // Create the client SASL transport using the information for the server
             // TODO Must ensure that address.getHostText() is the same as the Kerberos instance from the principal otherwise handshake will fail
-            transport = new TSaslClientTransport(GSSAPI, null, saslParams.getKerberosServerPrimary(), address.getHostText(), saslParams.getSaslProperties(),
+            transport = new TSaslClientTransport(GSSAPI, null, saslParams.getKerberosServerPrimary(), hostname, saslParams.getSaslProperties(),
                 null, transport);
 
             // Wrap it all in a processor which will run with a doAs the current user
