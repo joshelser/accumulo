@@ -92,6 +92,7 @@ import org.apache.accumulo.server.fs.VolumeManager.FileType;
 import org.apache.accumulo.server.fs.VolumeManagerImpl;
 import org.apache.accumulo.server.fs.VolumeUtil;
 import org.apache.accumulo.server.rpc.RpcWrapper;
+import org.apache.accumulo.server.rpc.TCredentialsUpdatingWrapper;
 import org.apache.accumulo.server.rpc.TServerUtils;
 import org.apache.accumulo.server.tables.TableManager;
 import org.apache.accumulo.server.util.Halt;
@@ -710,7 +711,7 @@ public class SimpleGarbageCollector extends AccumuloServerContext implements Ifa
   }
 
   private HostAndPort startStatsService() throws UnknownHostException {
-    Processor<Iface> processor = new Processor<Iface>(RpcWrapper.service(this));
+    Processor<Iface> processor = new Processor<Iface>(TCredentialsUpdatingWrapper.service(RpcWrapper.service(this)));
     int port = getConfiguration().getPort(Property.GC_PORT);
     long maxMessageSize = getConfiguration().getMemoryInBytes(Property.GENERAL_MAX_MESSAGE_SIZE);
     HostAndPort result = HostAndPort.fromParts(opts.getAddress(), port);

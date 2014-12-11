@@ -173,6 +173,7 @@ import org.apache.accumulo.server.problems.ProblemReports;
 import org.apache.accumulo.server.replication.ZooKeeperInitialization;
 import org.apache.accumulo.server.rpc.RpcWrapper;
 import org.apache.accumulo.server.rpc.ServerAddress;
+import org.apache.accumulo.server.rpc.TCredentialsUpdatingWrapper;
 import org.apache.accumulo.server.rpc.TServerUtils;
 import org.apache.accumulo.server.security.AuditedSecurityOperation;
 import org.apache.accumulo.server.security.SecurityOperation;
@@ -2271,8 +2272,7 @@ public class TabletServer extends AccumuloServerContext implements Runnable {
 
   private HostAndPort startTabletClientService() throws UnknownHostException {
     // start listening for client connection last
-    // TODO Wrap ThriftClientHandler in such a way to override the TCredentials with the KRB principal from the UGIAssumingProcessor
-    Iface tch = RpcWrapper.service(new ThriftClientHandler());
+    Iface tch = TCredentialsUpdatingWrapper.service(RpcWrapper.service(new ThriftClientHandler()));
     Processor<Iface> processor = new Processor<Iface>(tch);
     HostAndPort address = startServer(getServerConfigurationFactory().getConfiguration(), clientAddress.getHostText(), Property.TSERV_CLIENTPORT, processor,
         "Thrift Client Server");
@@ -2281,7 +2281,7 @@ public class TabletServer extends AccumuloServerContext implements Runnable {
   }
 
   private HostAndPort startReplicationService() throws UnknownHostException {
-    ReplicationServicer.Iface repl = RpcWrapper.service(new ReplicationServicerHandler(this));
+    ReplicationServicer.Iface repl = TCredentialsUpdatingWrapper.service(RpcWrapper.service(new ReplicationServicerHandler(this)));
     ReplicationServicer.Processor<ReplicationServicer.Iface> processor = new ReplicationServicer.Processor<ReplicationServicer.Iface>(repl);
     AccumuloConfiguration conf = getServerConfigurationFactory().getConfiguration();
     Property maxMessageSizeProperty = (conf.get(Property.TSERV_MAX_MESSAGE_SIZE) != null ? Property.TSERV_MAX_MESSAGE_SIZE : Property.GENERAL_MAX_MESSAGE_SIZE);

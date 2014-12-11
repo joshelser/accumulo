@@ -28,6 +28,7 @@ import org.apache.accumulo.core.conf.AccumuloConfiguration;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.proxy.thrift.AccumuloProxy;
 import org.apache.accumulo.server.rpc.RpcWrapper;
+import org.apache.accumulo.server.rpc.TCredentialsUpdatingWrapper;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TCompactProtocol;
@@ -42,9 +43,9 @@ import com.beust.jcommander.Parameter;
 import com.google.common.io.Files;
 
 public class Proxy {
-  
+
   private static final Logger log = Logger.getLogger(Proxy.class);
-  
+
   public static class PropertiesConverter implements IStringConverter<Properties> {
     @Override
     public Properties convert(String fileName) {
@@ -63,36 +64,36 @@ public class Proxy {
       return prop;
     }
   }
-  
+
   public static class Opts extends Help {
     @Parameter(names = "-p", required = true, description = "properties file name", converter = PropertiesConverter.class)
     Properties prop;
   }
-  
+
   public static void main(String[] args) throws Exception {
     Opts opts = new Opts();
     opts.parseArgs(Proxy.class.getName(), args);
-    
+
     boolean useMini = Boolean.parseBoolean(opts.prop.getProperty("useMiniAccumulo", "false"));
     boolean useMock = Boolean.parseBoolean(opts.prop.getProperty("useMockInstance", "false"));
     String instance = opts.prop.getProperty("instance");
     String zookeepers = opts.prop.getProperty("zookeepers");
-    
+
     if (!useMini && !useMock && instance == null) {
       System.err.println("Properties file must contain one of : useMiniAccumulo=true, useMockInstance=true, or instance=<instance name>");
       System.exit(1);
     }
-    
+
     if (instance != null && zookeepers == null) {
       System.err.println("When instance is set in properties file, zookeepers must also be set.");
       System.exit(1);
     }
-    
+
     if (!opts.prop.containsKey("port")) {
       System.err.println("No port property");
       System.exit(1);
     }
-    
+
     if (useMini) {
       log.info("Creating mini cluster");
       final File folder = Files.createTempDir();
@@ -114,29 +115,29 @@ public class Proxy {
         }
       });
     }
-    
+
     Class<? extends TProtocolFactory> protoFactoryClass = Class.forName(opts.prop.getProperty("protocolFactory", TCompactProtocol.Factory.class.getName()))
         .asSubclass(TProtocolFactory.class);
     int port = Integer.parseInt(opts.prop.getProperty("port"));
     TServer server = createProxyServer(AccumuloProxy.class, ProxyServer.class, port, protoFactoryClass, opts.prop);
     server.serve();
   }
-  
+
   public static TServer createProxyServer(Class<?> api, Class<?> implementor, final int port, Class<? extends TProtocolFactory> protoClass,
       Properties properties) throws Exception {
     final TNonblockingServerSocket socket = new TNonblockingServerSocket(port);
-    
+
     // create the implementor
     Object impl = implementor.getConstructor(Properties.class).newInstance(properties);
-    
+
     Class<?> proxyProcClass = Class.forName(api.getName() + "$Processor");
     Class<?> proxyIfaceClass = Class.forName(api.getName() + "$Iface");
 
     @SuppressWarnings("unchecked")
     Constructor<? extends TProcessor> proxyProcConstructor = (Constructor<? extends TProcessor>) proxyProcClass.getConstructor(proxyIfaceClass);
-    
-    final TProcessor processor = proxyProcConstructor.newInstance(RpcWrapper.service(impl));
-    
+
+    final TProcessor processor = proxyProcConstructor.newInstance(TCredentialsUpdatingWrapper.service(RpcWrapper.service(impl)));
+
     THsHaServer.Args args = new THsHaServer.Args(socket);
     args.processor(processor);
     final long maxFrameSize = AccumuloConfiguration.getMemoryInBytes(properties.getProperty("maxFrameSize", "16M"));
