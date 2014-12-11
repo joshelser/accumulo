@@ -108,8 +108,6 @@ public enum Property {
   RPC_SASL_QOP("rpc.sasl.qop", "auth", PropertyType.STRING,
       "The quality of protection to be used with SASL. Valid values are 'auth', 'auth-int', and 'auth-conf'"),
   // RPC_KERBEROS_REALM("rpc.kerberos.realm", "EXAMPLE.COM", PropertyType.STRING, "The realm section of the Kerberos principal for servers"),
-  RPC_KERBEROS_PRIMARY("rpc.kerberos.primary", "accumulo", PropertyType.STRING,
-      "The first component, before the first '/', of the Kerberos principal used by servers"),
 
   // instance properties (must be the same for every node in an instance)
   INSTANCE_PREFIX("instance.", null, PropertyType.PREFIX,

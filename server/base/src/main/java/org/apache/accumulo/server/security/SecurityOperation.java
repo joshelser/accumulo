@@ -32,6 +32,8 @@ import org.apache.accumulo.core.client.impl.SecurityOperationsImpl;
 import org.apache.accumulo.core.client.impl.thrift.SecurityErrorCode;
 import org.apache.accumulo.core.client.impl.thrift.ThriftSecurityException;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
+import org.apache.accumulo.core.client.security.tokens.KerberosToken;
+import org.apache.accumulo.core.conf.AccumuloConfiguration;
 import org.apache.accumulo.core.conf.Property;
 import org.apache.accumulo.core.conf.SiteConfiguration;
 import org.apache.accumulo.core.data.thrift.IterInfo;
@@ -71,6 +73,8 @@ public class SecurityOperation {
   private static String rootUserName = null;
   private final ZooCache zooCache;
   private final String ZKUserPath;
+  private final boolean rpcSaslEnabled;
+  private final String kerberosServerPrincipal;
 
   protected final AccumuloServerContext context;
 
@@ -114,6 +118,30 @@ public class SecurityOperation {
     this.context = context;
     ZKUserPath = Constants.ZROOT + "/" + context.getInstance().getInstanceID() + "/users";
     zooCache = new ZooCache();
+
+    // Immutable for an instance. The server primary (e.g. 'accumulo' in 'accumulo/host1.domain.com@DOMAIN.COM') must
+    // be fixed because we must use it to determine the server's SYSTEM login
+    final AccumuloConfiguration conf = context.getConfiguration();
+    rpcSaslEnabled = conf.getBoolean(Property.INSTANCE_RPC_SASL_ENABLED);
+    if (rpcSaslEnabled) {
+      String kerberosPrincipal = conf.get(Property.GENERAL_KERBEROS_PRINCIPAL);
+      int offset = kerberosPrincipal.indexOf('/');
+      if (-1 != offset) {
+        // match "principal" in "principal/host@REALM"
+        kerberosServerPrincipal = kerberosPrincipal.substring(0, offset);
+        return;
+      }
+
+      offset = kerberosPrincipal.lastIndexOf('@');
+      if (-1 != offset) {
+        // match "principal" in "principal@REALM"
+        kerberosServerPrincipal = kerberosPrincipal.substring(0, offset);
+      }
+
+      throw new RuntimeException("Cannot parse Kerberos principal from '" + kerberosPrincipal + "'");
+    } else {
+      kerberosServerPrincipal = null;
+    }
   }
 
   public SecurityOperation(AccumuloServerContext context, Authorizor author, Authenticator authent, PermissionHandler pm) {
@@ -152,6 +180,13 @@ public class SecurityOperation {
   }
 
   public boolean isSystemUser(TCredentials credentials) {
+    if (rpcSaslEnabled) {
+      if (KerberosToken.CLASS_NAME.equals(credentials.getTokenClassName())) {
+        return kerberosServerPrincipal.equals(credentials.getPrincipal());
+      }
+      // Shouldn't happen?
+      throw new RuntimeException("Did not expect SASL to be enabled but to not receive a KerberosToken");
+    }
     return context.getCredentials().getToken().getClass().getName().equals(credentials.getTokenClassName());
   }
 
@@ -241,7 +276,7 @@ public class SecurityOperation {
 
   /**
    * Checks if a user has a system permission
-   * 
+   *
    * @return true if a user exists and has permission; false otherwise
    */
   private boolean hasSystemPermissionWithNamespaceId(TCredentials credentials, SystemPermission permission, String namespaceId, boolean useCached)
@@ -261,7 +296,7 @@ public class SecurityOperation {
   /**
    * Checks if a user has a system permission<br/>
    * This cannot check if a system user has permission.
-   * 
+   *
    * @return true if a user exists and has permission; false otherwise
    */
   private boolean _hasSystemPermission(String user, SystemPermission permission, boolean useCached) throws ThriftSecurityException {
@@ -281,7 +316,7 @@ public class SecurityOperation {
 
   /**
    * Checks if a user has a table permission
-   * 
+   *
    * @return true if a user exists and has permission; false otherwise
    */
   protected boolean hasTablePermission(TCredentials credentials, String tableId, String namespaceId, TablePermission permission, boolean useCached) throws ThriftSecurityException {
@@ -294,7 +329,7 @@ public class SecurityOperation {
   /**
    * Checks if a user has a table permission<br/>
    * This cannot check if a system user has permission.
-   * 
+   *
    * @return true if a user exists and has permission; false otherwise
    */
   protected boolean _hasTablePermission(String user, String table, TablePermission permission, boolean useCached) throws ThriftSecurityException {
@@ -317,7 +352,7 @@ public class SecurityOperation {
   /**
    * Checks if a user has a namespace permission<br/>
    * This cannot check if a system user has permission.
-   * 
+   *
    * @return true if a user exists and has permission; false otherwise
    */
   protected boolean _hasNamespacePermission(String user, String namespace, NamespacePermission permission, boolean useCached) throws ThriftSecurityException {
@@ -510,7 +545,7 @@ public class SecurityOperation {
     authenticate(c);
     // The one case where Table/SystemPermission -> NamespacePermission breaks down. The alternative is to make SystemPermission.ALTER_NAMESPACE provide
     // NamespacePermission.GRANT & ALTER_NAMESPACE, but then it would cause some permission checks to succeed with GRANT when they shouldn't
-    
+
     // This is a bit hackier then I (vines) wanted, but I think this one hackiness makes the overall SecurityOperations more succinct.
     return hasSystemPermissionWithNamespaceId(c, SystemPermission.ALTER_NAMESPACE, namespace, false)
         || hasNamespacePermission(c, c.principal, namespace, NamespacePermission.GRANT);
