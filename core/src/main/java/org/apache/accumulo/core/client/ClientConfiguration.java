@@ -75,7 +75,7 @@ public class ClientConfiguration extends CompositeConfiguration {
     // SASL / GSSAPI(Kerberos)
     INSTANCE_RPC_SASL_ENABLED(Property.INSTANCE_RPC_SASL_ENABLED),
     RPC_SASL_QOP(Property.RPC_SASL_QOP),
-    RPC_KERBEROS_PRIMARY(Property.RPC_KERBEROS_PRIMARY);
+    GENERAL_KERBEROS_PRINCIPAL(Property.GENERAL_KERBEROS_PRINCIPAL);
 
     private String key;
     private String defaultValue;

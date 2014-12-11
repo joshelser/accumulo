@@ -74,9 +74,23 @@ public class SaslConnectionParams {
     params.saslProperties.put(Sasl.QOP, params.qop.getQuality());
 
     // The primary from the KRB principal on each server (e.g. primary/instance@realm)
-    params.kerberosServerPrimary = conf.get(Property.RPC_KERBEROS_PRIMARY);
+    final String principal = conf.get(Property.GENERAL_KERBEROS_PRINCIPAL);
+    int offset = principal.indexOf('/');
+    if (-1 != offset) {
+      // match "principal" in "principal/host@REALM"
+      params.kerberosServerPrimary = principal.substring(0, offset);
+      return params;
+    }
 
-    return params;
+    // TODO Is it possible that we even hit this condition? Would a server ever be logged in without a host qualification in the principal?
+    offset = principal.lastIndexOf('@');
+    if (-1 != offset) {
+      // match "principal" in "principal@REALM"
+      params.kerberosServerPrimary = principal.substring(0, offset);
+      return params;
+    }
+
+    throw new RuntimeException("Cannot parse Kerberos principal from '" + principal + "'");
   }
 
   public Map<String,String> getSaslProperties() {
