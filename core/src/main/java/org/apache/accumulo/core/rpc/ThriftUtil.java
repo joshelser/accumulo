@@ -296,7 +296,7 @@ public class ThriftUtil {
         // If we have sasl params, set up that transport
         if (saslParams != null) {
           // TODO Do we want to fail loudly here? Is it ok to let this pass through on a mismatch?
-          if (UserGroupInformation.isSecurityEnabled()) {
+          if (!UserGroupInformation.isSecurityEnabled()) {
             throw new IllegalStateException("Expected Kerberos security to be enabled if SASL is in use");
           }
 
