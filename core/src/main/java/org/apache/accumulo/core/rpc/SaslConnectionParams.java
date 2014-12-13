@@ -46,6 +46,18 @@ public class SaslConnectionParams {
     public String getQuality() {
       return quality;
     }
+
+    public static QualityOfProtection get(String name) {
+      if (AUTH.quality.equals(name)) {
+        return AUTH;
+      } else if (AUTH_INT.quality.equals(name)) {
+        return AUTH_INT;
+      } else if (AUTH_CONF.quality.equals(name)) {
+        return AUTH_CONF;
+      }
+
+      throw new IllegalArgumentException("No value for " + name);
+    }
   }
 
   private QualityOfProtection qop;
@@ -71,7 +83,7 @@ public class SaslConnectionParams {
 
     // Get the quality of protection to use
     final String qopValue = conf.get(Property.RPC_SASL_QOP);
-    params.qop = QualityOfProtection.valueOf(qopValue);
+    params.qop = QualityOfProtection.get(qopValue);
 
     // Add in the SASL properties to a map so we don't have to repeatedly construct this map
     params.saslProperties.put(Sasl.QOP, params.qop.getQuality());
