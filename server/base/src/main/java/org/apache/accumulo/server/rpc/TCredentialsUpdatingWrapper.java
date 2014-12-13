@@ -26,11 +26,11 @@ import java.lang.reflect.Proxy;
  */
 public class TCredentialsUpdatingWrapper {
 
-  public static <T> T service(final T instance) {
+  public static <T> T service(final T instance, final Class<?> originalClass) {
     InvocationHandler handler = new TCredentialsUpdatingInvocationHandler<T>(instance);
 
     @SuppressWarnings("unchecked")
-    T proxiedInstance = (T) Proxy.newProxyInstance(instance.getClass().getClassLoader(), instance.getClass().getInterfaces(), handler);
+    T proxiedInstance = (T) Proxy.newProxyInstance(originalClass.getClassLoader(), originalClass.getInterfaces(), handler);
 
     return proxiedInstance;
   }

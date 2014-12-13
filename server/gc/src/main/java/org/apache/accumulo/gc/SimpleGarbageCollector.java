@@ -711,7 +711,7 @@ public class SimpleGarbageCollector extends AccumuloServerContext implements Ifa
   }
 
   private HostAndPort startStatsService() throws UnknownHostException {
-    Processor<Iface> processor = new Processor<Iface>(TCredentialsUpdatingWrapper.service(RpcWrapper.service(this)));
+    Processor<Iface> processor = new Processor<Iface>(TCredentialsUpdatingWrapper.service(RpcWrapper.service(this), getClass()));
     int port = getConfiguration().getPort(Property.GC_PORT);
     long maxMessageSize = getConfiguration().getMemoryInBytes(Property.GENERAL_MAX_MESSAGE_SIZE);
     HostAndPort result = HostAndPort.fromParts(opts.getAddress(), port);

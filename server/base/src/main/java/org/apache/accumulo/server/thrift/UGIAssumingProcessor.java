@@ -50,7 +50,7 @@ public class UGIAssumingProcessor implements TProcessor {
   public boolean process(final TProtocol inProt, final TProtocol outProt) throws TException {
     TTransport trans = inProt.getTransport();
     if (!(trans instanceof TSaslServerTransport)) {
-      throw new TException("Unexpected non-SASL transport " + trans.getClass());
+      throw new TException("Unexpected non-SASL transport " + trans.getClass() + ": " + trans);
     }
     TSaslServerTransport saslTrans = (TSaslServerTransport) trans;
     SaslServer saslServer = saslTrans.getSaslServer();

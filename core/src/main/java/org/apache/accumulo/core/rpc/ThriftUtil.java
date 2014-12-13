@@ -307,6 +307,8 @@ public class ThriftUtil {
             // Is this pricey enough that we want to cache it?
             final String hostname = InetAddress.getByName(address.getHostText()).getCanonicalHostName();
 
+            log.debug("Connecting to server as " + currentUser + " at " + saslParams.getKerberosServerPrimary() + "/" + hostname);
+
             // Create the client SASL transport using the information for the server
             // TODO Must ensure that address.getHostText() is the same as the Kerberos instance from the principal otherwise handshake will fail
             transport = new TSaslClientTransport(GSSAPI, null, saslParams.getKerberosServerPrimary(), hostname, saslParams.getSaslProperties(),

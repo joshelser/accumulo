@@ -1091,7 +1091,9 @@ public class Master extends AccumuloServerContext implements LiveTServerSet.List
     ZooKeeperInitialization.ensureZooKeeperInitialized(zReaderWriter, zroot);
 
     clientHandler = new MasterClientServiceHandler(this);
-    Processor<Iface> processor = new Processor<Iface>(TCredentialsUpdatingWrapper.service(RpcWrapper.service(clientHandler)));
+    Iface rpcProxy = RpcWrapper.service(clientHandler);
+    Iface tcredsProxy = TCredentialsUpdatingWrapper.service(rpcProxy, clientHandler.getClass());
+    Processor<Iface> processor = new Processor<Iface>(tcredsProxy);
     ServerAddress sa = TServerUtils.startServer(this, hostname, Property.MASTER_CLIENTPORT, processor, "Master", "Master Client Service Handler", null,
         Property.MASTER_MINTHREADS, Property.MASTER_THREADCHECK, Property.GENERAL_MAX_MESSAGE_SIZE);
     clientService = sa.server;

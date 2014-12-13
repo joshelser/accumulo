@@ -136,7 +136,7 @@ public class Proxy {
     @SuppressWarnings("unchecked")
     Constructor<? extends TProcessor> proxyProcConstructor = (Constructor<? extends TProcessor>) proxyProcClass.getConstructor(proxyIfaceClass);
 
-    final TProcessor processor = proxyProcConstructor.newInstance(TCredentialsUpdatingWrapper.service(RpcWrapper.service(impl)));
+    final TProcessor processor = proxyProcConstructor.newInstance(TCredentialsUpdatingWrapper.service(RpcWrapper.service(impl), impl.getClass()));
 
     THsHaServer.Args args = new THsHaServer.Args(socket);
     args.processor(processor);

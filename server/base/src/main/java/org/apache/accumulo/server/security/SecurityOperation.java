@@ -181,13 +181,13 @@ public class SecurityOperation {
   }
 
   public boolean isSystemUser(TCredentials credentials) {
-    // if (rpcSaslEnabled) {
-    // if (KerberosToken.CLASS_NAME.equals(credentials.getTokenClassName())) {
-    // return kerberosServerPrincipal.equals(credentials.getPrincipal());
-    // }
-    // // Shouldn't happen?
-    // throw new RuntimeException("SASL is enabled but received a KerberosToken");
-    // }
+//    if (rpcSaslEnabled) {
+//      if (KerberosToken.CLASS_NAME.equals(credentials.getTokenClassName())) {
+//        return kerberosServerPrincipal.equals(credentials.getPrincipal());
+//      }
+//      // Shouldn't happen?
+//      throw new RuntimeException("SASL is enabled but received a KerberosToken");
+//    }
     return context.getCredentials().getToken().getClass().getName().equals(credentials.getTokenClassName());
   }
 
