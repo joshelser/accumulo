@@ -279,11 +279,20 @@ public class Initialize {
       log.fatal("Failed to talk to zookeeper", e);
       return false;
     }
+
+    String rootUser;
+    try {
+      rootUser = getRootUserName();
+    } catch (Exception e) {
+      log.fatal("Failed to obtain user for administrative privileges");
+      return false;
+    }
+
     opts.rootpass = getRootPassword(opts);
-    return initialize(opts, instanceNamePath, fs);
+    return initialize(opts, instanceNamePath, fs, rootUser);
   }
 
-  private static boolean initialize(Opts opts, String instanceNamePath, VolumeManager fs) {
+  private static boolean initialize(Opts opts, String instanceNamePath, VolumeManager fs, String rootUser) {
 
     UUID uuid = UUID.randomUUID();
     // the actual disk locations of the root table and tablets
@@ -321,7 +330,7 @@ public class Initialize {
 
     try {
       AccumuloServerContext context = new AccumuloServerContext(new ServerConfigurationFactory(HdfsZooInstance.getInstance()));
-      initSecurity(context, opts, uuid.toString());
+      initSecurity(context, opts, uuid.toString(), rootUser);
     } catch (Exception e) {
       log.fatal("Failed to initialize security", e);
       return false;
@@ -527,6 +536,27 @@ public class Initialize {
     return instanceNamePath;
   }
 
+  private static String getRootUserName() throws IOException {
+    AccumuloConfiguration conf = SiteConfiguration.getInstance();
+    final String keytab = conf.get(Property.GENERAL_KERBEROS_KEYTAB);
+    if (keytab.equals(Property.GENERAL_KERBEROS_KEYTAB.getDefaultValue())) {
+      return DEFAULT_ROOT_USER;
+    }
+
+    ConsoleReader c = getConsoleReader();
+    c.println("Running against secured HDFS");
+    do {
+      String user = c.readLine("Principal (user) to grant administrative privileges to : ");
+      if (user == null) {
+        // should not happen
+        System.exit(1);
+      }
+      if (!user.isEmpty()) {
+        return user;
+      }
+    } while (true);
+  }
+
   private static byte[] getRootPassword(Opts opts) throws IOException {
     if (opts.cliPassword != null) {
       return opts.cliPassword.getBytes(UTF_8);
@@ -547,8 +577,13 @@ public class Initialize {
     return rootpass.getBytes(UTF_8);
   }
 
-  private static void initSecurity(AccumuloServerContext context, Opts opts, String iid) throws AccumuloSecurityException, ThriftSecurityException {
-    AuditedSecurityOperation.getInstance(context, true).initializeSecurity(context.rpcCreds(), DEFAULT_ROOT_USER, opts.rootpass);
+  private static void initSecurity(AccumuloServerContext context, Opts opts, String iid) throws AccumuloSecurityException, ThriftSecurityException, IOException {
+    initSecurity(context, opts, iid, getRootUserName());
+  }
+
+  private static void initSecurity(AccumuloServerContext context, Opts opts, String iid, String rootUser) throws AccumuloSecurityException,
+      ThriftSecurityException, IOException {
+    AuditedSecurityOperation.getInstance(context, true).initializeSecurity(context.rpcCreds(), rootUser, opts.rootpass);
   }
 
   public static void initSystemTablesConfig() throws IOException {

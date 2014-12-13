@@ -136,6 +136,7 @@ public class SecurityOperation {
       if (-1 != offset) {
         // match "principal" in "principal@REALM"
         kerberosServerPrincipal = kerberosPrincipal.substring(0, offset);
+        return;
       }
 
       throw new RuntimeException("Cannot parse Kerberos principal from '" + kerberosPrincipal + "'");
@@ -180,13 +181,13 @@ public class SecurityOperation {
   }
 
   public boolean isSystemUser(TCredentials credentials) {
-    if (rpcSaslEnabled) {
-      if (KerberosToken.CLASS_NAME.equals(credentials.getTokenClassName())) {
-        return kerberosServerPrincipal.equals(credentials.getPrincipal());
-      }
-      // Shouldn't happen?
-      throw new RuntimeException("Did not expect SASL to be enabled but to not receive a KerberosToken");
-    }
+    // if (rpcSaslEnabled) {
+    // if (KerberosToken.CLASS_NAME.equals(credentials.getTokenClassName())) {
+    // return kerberosServerPrincipal.equals(credentials.getPrincipal());
+    // }
+    // // Shouldn't happen?
+    // throw new RuntimeException("SASL is enabled but received a KerberosToken");
+    // }
     return context.getCredentials().getToken().getClass().getName().equals(credentials.getTokenClassName());
   }
 
@@ -200,6 +201,16 @@ public class SecurityOperation {
         throw new ThriftSecurityException(creds.getPrincipal(), SecurityErrorCode.BAD_CREDENTIALS);
       }
     } else {
+      // Not the system user
+      if (rpcSaslEnabled) {
+        if (KerberosToken.class == creds.getToken().getClass()) {
+          if (null == creds.getPrincipal()) {
+            // Should never happen because SASL handshake shouldn't succeed
+            throw new RuntimeException("Did not find principal included in credentials");
+          }
+          return;
+        }
+      }
       try {
         if (!authenticator.authenticateUser(creds.getPrincipal(), creds.getToken())) {
           throw new ThriftSecurityException(creds.getPrincipal(), SecurityErrorCode.BAD_CREDENTIALS);
@@ -225,6 +236,19 @@ public class SecurityOperation {
       return true;
     try {
       Credentials toCreds = Credentials.fromThrift(toAuth);
+
+      if (rpcSaslEnabled) {
+        if (KerberosToken.class == toCreds.getToken().getClass()) {
+          if (null == toCreds.getPrincipal()) {
+            // Should never happen because SASL handshake shouldn't succeed
+            throw new RuntimeException("Did not find principal included in credentials");
+          }
+          return true;
+        }
+        log.error("SASL is enabled but received authentication token which wasn't a KerberosToken");
+        return false;
+      }
+
       return authenticator.authenticateUser(toCreds.getPrincipal(), toCreds.getToken());
     } catch (AccumuloSecurityException e) {
       throw e.asThriftException();

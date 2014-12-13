@@ -29,6 +29,9 @@ import org.apache.accumulo.core.conf.Property;
  * Connection parameters for setting up a TSaslTransportFactory
  */
 public class SaslConnectionParams {
+  /**
+   * Enumeration around {@link Sasl#QOP}
+   */
   public enum QualityOfProtection {
     AUTH("auth"),
     AUTH_INT("auth-int"),
