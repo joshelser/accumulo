@@ -16,6 +16,7 @@
  */
 package org.apache.accumulo.server.rpc;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.BindException;
 import java.net.InetAddress;
@@ -27,8 +28,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.accumulo.core.conf.AccumuloConfiguration;
 import org.apache.accumulo.core.conf.Property;
+import org.apache.accumulo.core.rpc.SaslConnectionParams;
 import org.apache.accumulo.core.rpc.SslConnectionParams;
 import org.apache.accumulo.core.rpc.ThriftUtil;
+import org.apache.accumulo.core.rpc.UGIAssumingTransportFactory;
 import org.apache.accumulo.core.util.Daemon;
 import org.apache.accumulo.core.util.LoggingRunnable;
 import org.apache.accumulo.core.util.SimpleThreadPool;
@@ -37,14 +40,20 @@ import org.apache.accumulo.server.AccumuloServerContext;
 import org.apache.accumulo.server.thrift.UGIAssumingProcessor;
 import org.apache.accumulo.server.util.Halt;
 import org.apache.accumulo.server.util.time.SimpleTimer;
+import org.apache.hadoop.security.SaslRpcServer;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.TProcessorFactory;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
+import org.apache.thrift.transport.TSaslServerTransport;
+import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransportException;
+import org.apache.thrift.transport.TTransportFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.net.HostAndPort;
 
 public class TServerUtils {
@@ -110,7 +119,7 @@ public class TServerUtils {
           HostAndPort addr = HostAndPort.fromParts(address, port);
           return TServerUtils.startTServer(addr, timedProcessor, serverName, threadName, minThreads,
               service.getConfiguration().getCount(Property.GENERAL_SIMPLETIMER_THREADPOOL_SIZE), timeBetweenThreadChecks, maxMessageSize,
-              service.getServerSslParams(), service.getClientTimeoutInMillis(), kerberosSecured);
+              service.getServerSslParams(), service.getServerSaslParams(), service.getClientTimeoutInMillis());
         } catch (TTransportException ex) {
           log.error("Unable to start TServer", ex);
           if (ex.getCause() == null || ex.getCause().getClass() == BindException.class) {
@@ -135,11 +144,11 @@ public class TServerUtils {
    * Create a NonBlockingServer with a custom thread pool that can dynamically resize itself.
    */
   public static ServerAddress createNonBlockingServer(HostAndPort address, TProcessor processor, final String serverName, String threadName,
-      final int numThreads, final int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize, boolean kerberosSecured) throws TTransportException {
+      final int numThreads, final int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize) throws TTransportException {
     TNonblockingServerSocket transport = new TNonblockingServerSocket(new InetSocketAddress(address.getHostText(), address.getPort()));
     CustomNonBlockingServer.Args options = new CustomNonBlockingServer.Args(transport);
     options.protocolFactory(ThriftUtil.protocolFactory());
-    options.transportFactory(ThriftUtil.transportFactory(maxMessageSize, kerberosSecured));
+    options.transportFactory(ThriftUtil.transportFactory(maxMessageSize));
     options.maxReadBufferBytes = maxMessageSize;
     options.stopTimeoutVal(5);
     /*
@@ -178,18 +187,39 @@ public class TServerUtils {
     return new ServerAddress(new CustomNonBlockingServer(options), address);
   }
 
+  /**
+   * Create a TServer with the provided server transport and processor with the default transport factory.
+   *
+   * @param transport
+   *          TServerTransport for the server
+   * @param processor
+   *          TProcessor for the server
+   */
   public static TServer createThreadPoolServer(TServerTransport transport, TProcessor processor) {
+    return createThreadPoolServer(transport, processor, ThriftUtil.transportFactory());
+  }
+
+  /**
+   * Create a TServer with the provided server transport, processor and transport factory.
+   *
+   * @param transport
+   *          TServerTransport for the server
+   * @param processor
+   *          TProcessor for the server
+   * @param transportFactory
+   *          TTransportFactory for the server
+   */
+  public static TServer createThreadPoolServer(TServerTransport transport, TProcessor processor, TTransportFactory transportFactory) {
     TThreadPoolServer.Args options = new TThreadPoolServer.Args(transport);
     options.protocolFactory(ThriftUtil.protocolFactory());
-    options.transportFactory(ThriftUtil.transportFactory());
+    options.transportFactory(transportFactory);
     options.processorFactory(new ClientInfoProcessorFactory(clientAddress, processor));
     return new TThreadPoolServer(options);
   }
 
-  public static ServerAddress createSslThreadPoolServer(HostAndPort address, TProcessor processor, long socketTimeout, SslConnectionParams sslParams,
-      boolean kerberosSecured)
+  public static ServerAddress createSslThreadPoolServer(HostAndPort address, TProcessor processor, long socketTimeout, SslConnectionParams sslParams)
       throws TTransportException {
-    org.apache.thrift.transport.TServerSocket transport;
+    TServerSocket transport;
     try {
       transport = ThriftUtil.getServerSocket(address.getPort(), (int) socketTimeout, InetAddress.getByName(address.getHostText()), sslParams);
     } catch (UnknownHostException e) {
@@ -201,12 +231,46 @@ public class TServerUtils {
     return new ServerAddress(createThreadPoolServer(transport, processor), address);
   }
 
-  public static ServerAddress startTServer(AccumuloConfiguration conf, HostAndPort address, TProcessor processor, String serverName, String threadName, int numThreads, int numSTThreads,
- long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, long sslSocketTimeout)
+  public static ServerAddress createSaslThreadPoolServer(HostAndPort address, TProcessor processor, long socketTimeout, SaslConnectionParams params)
       throws TTransportException {
-    final boolean kerberosSecured = conf.getBoolean(Property.INSTANCE_RPC_SASL_ENABLED);
+    InetSocketAddress socketAddr = new InetSocketAddress(address.getHostText(), address.getPort());
+    TNonblockingServerSocket transport = new TNonblockingServerSocket(socketAddr);
+
+    final String hostname;
+    try {
+      hostname = InetAddress.getByName(address.getHostText()).getCanonicalHostName();
+    } catch (UnknownHostException e) {
+      throw new TTransportException(e);
+    }
+
+    final UserGroupInformation serverUser;
+    try {
+      serverUser = UserGroupInformation.getLoginUser();
+    } catch (IOException e) {
+      throw new TTransportException(e);
+    }
+
+    // Make the SASL transport factory with the instance and primary from the kerberos server principal, SASL properties
+    // and the SASL callback handler from Hadoop to ensure authorization ID is the authentication ID
+    TSaslServerTransport.Factory saslTransportFactory = new TSaslServerTransport.Factory();
+    saslTransportFactory.addServerDefinition(ThriftUtil.GSSAPI, params.getKerberosServerPrimary(), hostname, params.getSaslProperties(),
+        new SaslRpcServer.SaslGssCallbackHandler());
+
+    // Make sure the TTransportFactory is performing a UGI.doAs
+    TTransportFactory ugiTransportFactory = new UGIAssumingTransportFactory(saslTransportFactory, serverUser);
+
+    if (address.getPort() == 0) {
+      address = HostAndPort.fromParts(address.getHostText(), transport.getPort());
+    }
+
+    return new ServerAddress(createThreadPoolServer(transport, processor, ugiTransportFactory), address);
+  }
+
+  public static ServerAddress startTServer(AccumuloConfiguration conf, HostAndPort address, TProcessor processor, String serverName, String threadName,
+      int numThreads, int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, SaslConnectionParams saslParams,
+      long serverSocketTimeout) throws TTransportException {
     return startTServer(address, new TimedProcessor(conf, processor, serverName, threadName), serverName, threadName, numThreads, numSTThreads,
-        timeBetweenThreadChecks, maxMessageSize, sslParams, sslSocketTimeout, kerberosSecured);
+        timeBetweenThreadChecks, maxMessageSize, sslParams, saslParams, serverSocketTimeout);
   }
 
   /**
@@ -215,15 +279,19 @@ public class TServerUtils {
    * @return A ServerAddress encapsulating the Thrift server created and the host/port which it is bound to.
    */
   public static ServerAddress startTServer(HostAndPort address, TimedProcessor processor, String serverName, String threadName, int numThreads,
-      int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, long sslSocketTimeout, boolean kerberosSecured)
-      throws TTransportException {
+      int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize, SslConnectionParams sslParams, SaslConnectionParams saslParams,
+      long serverSocketTimeout) throws TTransportException {
+    // Not sure if we can do this, or if it makes sense to do so. Fail hard if we happen on the situation because the logic
+    // below wouldn't handle it correctly as-is.
+    Preconditions.checkArgument(!(sslParams != null && saslParams != null), "Cannot currently start a thrift server using both SSL and SASL");
 
     ServerAddress serverAddress;
     if (sslParams != null) {
-      serverAddress = createSslThreadPoolServer(address, processor, sslSocketTimeout, sslParams, kerberosSecured);
+      serverAddress = createSslThreadPoolServer(address, processor, serverSocketTimeout, sslParams);
+    } else if (saslParams != null) {
+      serverAddress = createSaslThreadPoolServer(address, processor, serverSocketTimeout, saslParams);
     } else {
-      serverAddress = createNonBlockingServer(address, processor, serverName, threadName, numThreads, numSTThreads, timeBetweenThreadChecks, maxMessageSize,
-          kerberosSecured);
+      serverAddress = createNonBlockingServer(address, processor, serverName, threadName, numThreads, numSTThreads, timeBetweenThreadChecks, maxMessageSize);
     }
     final TServer finalServer = serverAddress.server;
     Runnable serveTask = new Runnable() {
@@ -262,7 +330,7 @@ public class TServerUtils {
       ExecutorService es = (ExecutorService) f.get(s);
       es.shutdownNow();
     } catch (Exception e) {
-      TServerUtils.log.error("Unable to call shutdownNow", e);
+      log.error("Unable to call shutdownNow", e);
     }
   }
 }

@@ -20,6 +20,7 @@ import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.impl.ClientContext;
 import org.apache.accumulo.core.client.mock.MockInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.accumulo.core.rpc.SaslConnectionParams;
 import org.apache.accumulo.core.rpc.SslConnectionParams;
 import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.server.conf.ServerConfigurationFactory;
@@ -62,6 +63,12 @@ public class AccumuloServerContext extends ClientContext {
    */
   public SslConnectionParams getServerSslParams() {
     return SslConnectionParams.forServer(getConfiguration());
+  }
+
+  public SaslConnectionParams getServerSaslParams() {
+    // TODO Not sure if there really needs to be a difference between client and server
+    // The client needs to know the principal of the server to authenticate.
+    return getClientSaslParams();
   }
 
 }

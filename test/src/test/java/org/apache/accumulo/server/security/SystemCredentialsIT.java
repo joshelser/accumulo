@@ -114,7 +114,7 @@ public class SystemCredentialsIT extends ConfigurableMacIT {
           throw new UnsupportedOperationException();
         }
 
-      });
+      }, "!SYSTEM");
     } else if (args[0].equals("good")) {
       creds = SystemCredentials.get(HdfsZooInstance.getInstance());
     }

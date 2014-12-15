@@ -102,7 +102,7 @@ public class ThriftUtil {
 
   static private TProtocolFactory protocolFactory = new TraceProtocolFactory();
   static private TTransportFactory transportFactory = new TFramedTransport.Factory(Integer.MAX_VALUE);
-  private static final String GSSAPI = "GSSAPI";
+  public static final String GSSAPI = "GSSAPI";
 
   static public <T extends TServiceClient> T createClient(TServiceClientFactory<T> factory, TTransport transport) {
     return factory.getClient(protocolFactory.getProtocol(transport), protocolFactory.getProtocol(transport));
@@ -197,26 +197,19 @@ public class ThriftUtil {
 
   private final static Map<Integer,TTransportFactory> factoryCache = new HashMap<Integer,TTransportFactory>();
 
-  synchronized public static TTransportFactory transportFactory(int maxFrameSize, boolean kerberosSecured) {
+  synchronized public static TTransportFactory transportFactory(int maxFrameSize) {
     TTransportFactory factory = factoryCache.get(maxFrameSize);
     if (factory == null) {
       factory = new TFramedTransport.Factory(maxFrameSize);
       factoryCache.put(maxFrameSize, factory);
     }
-    if (kerberosSecured) {
-      try {
-        factory = new UGIAssumingTransportFactory(factory, UserGroupInformation.getCurrentUser());
-      } catch (IOException e) {
-        throw new RuntimeException("Failed to login", e);
-      }
-    }
     return factory;
   }
 
-  synchronized public static TTransportFactory transportFactory(long maxFrameSize, boolean kerberosSecured) {
+  synchronized public static TTransportFactory transportFactory(long maxFrameSize) {
     if (maxFrameSize > Integer.MAX_VALUE || maxFrameSize < 1)
       throw new RuntimeException("Thrift transport frames are limited to " + Integer.MAX_VALUE);
-    return transportFactory((int) maxFrameSize, kerberosSecured);
+    return transportFactory((int) maxFrameSize);
   }
 
   public static TProtocolFactory protocolFactory() {

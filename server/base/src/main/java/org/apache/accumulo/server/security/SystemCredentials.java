@@ -30,17 +30,20 @@ import org.apache.accumulo.core.Constants;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.accumulo.core.conf.AccumuloConfiguration;
 import org.apache.accumulo.core.conf.Property;
 import org.apache.accumulo.core.conf.SiteConfiguration;
+import org.apache.accumulo.core.rpc.SaslConnectionParams;
 import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.core.security.thrift.TCredentials;
 import org.apache.accumulo.core.util.Base64;
 import org.apache.accumulo.server.ServerConstants;
+import org.apache.accumulo.server.conf.ServerConfigurationFactory;
 import org.apache.hadoop.io.Writable;
 
 /**
  * Credentials for the system services.
- * 
+ *
  * @since 1.6.0
  */
 public final class SystemCredentials extends Credentials {
@@ -51,8 +54,8 @@ public final class SystemCredentials extends Credentials {
 
   private final TCredentials AS_THRIFT;
 
-  SystemCredentials(Instance instance) {
-    super(SYSTEM_PRINCIPAL, SystemToken.get(instance));
+  SystemCredentials(Instance instance, String principal) {
+    super(principal, SystemToken.get(instance));
     AS_THRIFT = super.toThrift(instance);
   }
 
@@ -65,7 +68,13 @@ public final class SystemCredentials extends Credentials {
 
   public static SystemCredentials get(Instance instance) {
     check_permission();
-    return new SystemCredentials(instance);
+    AccumuloConfiguration conf = new ServerConfigurationFactory(instance).getConfiguration();
+    SaslConnectionParams saslParams = SaslConnectionParams.forConfig(conf);
+    if (null != saslParams) {
+      final String primary = saslParams.getKerberosServerPrimary();
+      return new SystemCredentials(instance, primary);
+    }
+    return new SystemCredentials(instance, SYSTEM_PRINCIPAL);
   }
 
   @Override
@@ -77,7 +86,7 @@ public final class SystemCredentials extends Credentials {
 
   /**
    * An {@link AuthenticationToken} type for Accumulo servers for inter-server communication.
-   * 
+   *
    * @since 1.6.0
    */
   public static final class SystemToken extends PasswordToken {

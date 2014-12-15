@@ -74,7 +74,7 @@ public class SecurityOperation {
   private final ZooCache zooCache;
   private final String ZKUserPath;
   private final boolean rpcSaslEnabled;
-  private final String kerberosServerPrincipal;
+  // private final String kerberosServerPrincipal;
 
   protected final AccumuloServerContext context;
 
@@ -123,26 +123,26 @@ public class SecurityOperation {
     // be fixed because we must use it to determine the server's SYSTEM login
     final AccumuloConfiguration conf = context.getConfiguration();
     rpcSaslEnabled = conf.getBoolean(Property.INSTANCE_RPC_SASL_ENABLED);
-    if (rpcSaslEnabled) {
-      String kerberosPrincipal = conf.get(Property.GENERAL_KERBEROS_PRINCIPAL);
-      int offset = kerberosPrincipal.indexOf('/');
-      if (-1 != offset) {
-        // match "principal" in "principal/host@REALM"
-        kerberosServerPrincipal = kerberosPrincipal.substring(0, offset);
-        return;
-      }
-
-      offset = kerberosPrincipal.lastIndexOf('@');
-      if (-1 != offset) {
-        // match "principal" in "principal@REALM"
-        kerberosServerPrincipal = kerberosPrincipal.substring(0, offset);
-        return;
-      }
-
-      throw new RuntimeException("Cannot parse Kerberos principal from '" + kerberosPrincipal + "'");
-    } else {
-      kerberosServerPrincipal = null;
-    }
+    // if (rpcSaslEnabled) {
+    // String kerberosPrincipal = conf.get(Property.GENERAL_KERBEROS_PRINCIPAL);
+    // int offset = kerberosPrincipal.indexOf('/');
+    // if (-1 != offset) {
+    // // match "principal" in "principal/host@REALM"
+    // kerberosServerPrincipal = kerberosPrincipal.substring(0, offset);
+    // return;
+    // }
+    //
+    // offset = kerberosPrincipal.lastIndexOf('@');
+    // if (-1 != offset) {
+    // // match "principal" in "principal@REALM"
+    // kerberosServerPrincipal = kerberosPrincipal.substring(0, offset);
+    // return;
+    // }
+    //
+    // throw new RuntimeException("Cannot parse Kerberos principal from '" + kerberosPrincipal + "'");
+    // } else {
+    // kerberosServerPrincipal = null;
+    // }
   }
 
   public SecurityOperation(AccumuloServerContext context, Authorizor author, Authenticator authent, PermissionHandler pm) {
