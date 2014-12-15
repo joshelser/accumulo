@@ -2273,7 +2273,8 @@ public class TabletServer extends AccumuloServerContext implements Runnable {
   private HostAndPort startTabletClientService() throws UnknownHostException {
     // start listening for client connection last
     final ThriftClientHandler handler = new ThriftClientHandler();
-    Iface tch = TCredentialsUpdatingWrapper.service(RpcWrapper.service(handler), handler.getClass());
+    Iface rpcProxy = RpcWrapper.service(handler);
+    Iface tch = TCredentialsUpdatingWrapper.service(rpcProxy, handler.getClass());
     Processor<Iface> processor = new Processor<Iface>(tch);
     HostAndPort address = startServer(getServerConfigurationFactory().getConfiguration(), clientAddress.getHostText(), Property.TSERV_CLIENTPORT, processor,
         "Thrift Client Server");
@@ -2283,7 +2284,8 @@ public class TabletServer extends AccumuloServerContext implements Runnable {
 
   private HostAndPort startReplicationService() throws UnknownHostException {
     final ReplicationServicerHandler handler = new ReplicationServicerHandler(this);
-    ReplicationServicer.Iface repl = TCredentialsUpdatingWrapper.service(RpcWrapper.service(handler), handler.getClass());
+    ReplicationServicer.Iface rpcProxy = RpcWrapper.service(handler);
+    ReplicationServicer.Iface repl = TCredentialsUpdatingWrapper.service(rpcProxy, handler.getClass());
     ReplicationServicer.Processor<ReplicationServicer.Iface> processor = new ReplicationServicer.Processor<ReplicationServicer.Iface>(repl);
     AccumuloConfiguration conf = getServerConfigurationFactory().getConfiguration();
     Property maxMessageSizeProperty = (conf.get(Property.TSERV_MAX_MESSAGE_SIZE) != null ? Property.TSERV_MAX_MESSAGE_SIZE : Property.GENERAL_MAX_MESSAGE_SIZE);
