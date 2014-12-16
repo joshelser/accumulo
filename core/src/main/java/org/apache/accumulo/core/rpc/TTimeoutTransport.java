@@ -34,7 +34,7 @@ import org.apache.thrift.transport.TTransport;
 import com.google.common.net.HostAndPort;
 
 public class TTimeoutTransport {
-  
+
   private static InputStream getInputStream(Socket socket, long timeout) {
     try {
       Method m = NetUtils.class.getMethod("getInputStream", Socket.class, Long.TYPE);
@@ -43,7 +43,7 @@ public class TTimeoutTransport {
       throw new RuntimeException(e);
     }
   }
-  
+
   public static TTransport create(HostAndPort addr, long timeoutMillis) throws IOException {
     return create(new InetSocketAddress(addr.getHostText(), addr.getPort()), timeoutMillis);
   }

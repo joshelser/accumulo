@@ -48,7 +48,6 @@ import org.apache.accumulo.core.trace.Span;
 import org.apache.accumulo.core.trace.Trace;
 import org.apache.accumulo.core.util.UtilWaitThread;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.TServiceClient;
 import org.apache.thrift.TServiceClientFactory;
@@ -64,12 +63,14 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.net.HostAndPort;
 
 public class ThriftUtil {
-  private static final Logger log = Logger.getLogger(ThriftUtil.class);
+  private static final Logger log = LoggerFactory.getLogger(ThriftUtil.class);
 
   public static class TraceProtocol extends TCompactProtocol {
     private Span span = null;
@@ -253,6 +254,8 @@ public class ThriftUtil {
     TTransport transport = null;
     try {
       if (sslParams != null) {
+        log.trace("Creating SSL client transport");
+
         // TSSLTransportFactory handles timeout 0 -> forever natively
         if (sslParams.useJsse()) {
           transport = TSSLTransportFactory.getClientSocket(address.getHostText(), address.getPort(), timeout);
@@ -272,9 +275,44 @@ public class ThriftUtil {
 
           // Create the TSocket from that
           transport = createClient(wrappingSslSockFactory, address.getHostText(), address.getPort(), timeout);
+          // TSSLTransportFactory leaves transports open, so no need to open here
         }
-        // TSSLTransportFactory leaves transports open, so no need to open here
+
+        transport = ThriftUtil.transportFactory().getTransport(transport);
+      } else if (null != saslParams) {
+        // TODO Do we want to fail loudly here? Is it ok to let this pass through on a mismatch?
+        if (!UserGroupInformation.isSecurityEnabled()) {
+          throw new IllegalStateException("Expected Kerberos security to be enabled if SASL is in use");
+        }
+
+        log.trace("Creating SASL connection to {}:{}", address.getHostText(), address.getPort());
+
+        transport = new TSocket(address.getHostText(), address.getPort());
+
+        try {
+          // Log in via UGI, ensures we have logged in with our KRB credentials
+          final UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
+
+          // Is this pricey enough that we want to cache it?
+          final String hostname = InetAddress.getByName(address.getHostText()).getCanonicalHostName();
+
+          log.trace("Opening transport to server as {} to {}/{}", currentUser, saslParams.getKerberosServerPrimary(), hostname);
+
+          // Create the client SASL transport using the information for the server
+          // TODO Must ensure that address.getHostText() is the same as the Kerberos instance from the principal otherwise handshake will fail
+          transport = new TSaslClientTransport(GSSAPI, null, saslParams.getKerberosServerPrimary(), hostname, saslParams.getSaslProperties(), null, transport);
+
+          // Wrap it all in a processor which will run with a doAs the current user
+          transport = new UGIAssumingTransport(transport, currentUser);
+
+          // Open the transport
+          transport.open();
+        } catch (IOException e) {
+          log.error("Failed to open SASL transport", e);
+          throw new TTransportException(e);
+        }
       } else {
+        log.trace("Opening normal transport");
         if (timeout == 0) {
           transport = new TSocket(address.getHostText(), address.getPort());
           transport.open();
@@ -282,43 +320,15 @@ public class ThriftUtil {
           try {
             transport = TTimeoutTransport.create(address, timeout);
           } catch (IOException ex) {
+            log.error("Failed to open transport to " + address);
             throw new TTransportException(ex);
           }
+
+          // Open the transport
+          transport.open();
         }
-
-        // If we have sasl params, set up that transport
-        if (saslParams != null) {
-          // TODO Do we want to fail loudly here? Is it ok to let this pass through on a mismatch?
-          if (!UserGroupInformation.isSecurityEnabled()) {
-            throw new IllegalStateException("Expected Kerberos security to be enabled if SASL is in use");
-          }
-
-          try {
-            // Log in via UGI, ensures we have logged in with our KRB credentials
-            final UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
-
-            // Is this pricey enough that we want to cache it?
-            final String hostname = InetAddress.getByName(address.getHostText()).getCanonicalHostName();
-
-            log.debug("Connecting to server as " + currentUser + " at " + saslParams.getKerberosServerPrimary() + "/" + hostname);
-
-            // Create the client SASL transport using the information for the server
-            // TODO Must ensure that address.getHostText() is the same as the Kerberos instance from the principal otherwise handshake will fail
-            transport = new TSaslClientTransport(GSSAPI, null, saslParams.getKerberosServerPrimary(), hostname, saslParams.getSaslProperties(),
-                null, transport);
-
-            // Wrap it all in a processor which will run with a doAs the current user
-            transport = new UGIAssumingTransport(transport, currentUser);
-          } catch (IOException e) {
-            log.error("Failed to open SASL transport", e);
-            throw new TTransportException(e);
-          }
-        }
-
-        // Open the transport
-        transport.open();
+        transport = ThriftUtil.transportFactory().getTransport(transport);
       }
-      transport = ThriftUtil.transportFactory().getTransport(transport);
       success = true;
     } finally {
       if (!success && transport != null) {

@@ -92,11 +92,12 @@ public class TServerUtils {
     boolean portSearch = false;
     if (portSearchProperty != null)
       portSearch = service.getConfiguration().getBoolean(portSearchProperty);
-    final boolean kerberosSecured = service.getConfiguration().getBoolean(Property.INSTANCE_RPC_SASL_ENABLED);
-    if (kerberosSecured) {
+    final SaslConnectionParams saslParams = service.getServerSaslParams();
+    if (null != saslParams) {
       // Wrap the provided processor in our special processor which proxies the provided UGI on the logged-in UGI
       // Important that we have Timed -> UGIAssuming -> [provided] to make sure that the metrics are still reported
       // as the logged-in user.
+      log.info("Wrapping " + processor.getClass() + " in UGIAssumingProcessor");
       processor = new UGIAssumingProcessor(processor);
     }
     // create the TimedProcessor outside the port search loop so we don't try to register the same metrics mbean more than once
@@ -119,7 +120,7 @@ public class TServerUtils {
           HostAndPort addr = HostAndPort.fromParts(address, port);
           return TServerUtils.startTServer(addr, timedProcessor, serverName, threadName, minThreads,
               service.getConfiguration().getCount(Property.GENERAL_SIMPLETIMER_THREADPOOL_SIZE), timeBetweenThreadChecks, maxMessageSize,
-              service.getServerSslParams(), service.getServerSaslParams(), service.getClientTimeoutInMillis());
+              service.getServerSslParams(), saslParams, service.getClientTimeoutInMillis());
         } catch (TTransportException ex) {
           log.error("Unable to start TServer", ex);
           if (ex.getCause() == null || ex.getCause().getClass() == BindException.class) {
@@ -231,10 +232,11 @@ public class TServerUtils {
     return new ServerAddress(createThreadPoolServer(transport, processor), address);
   }
 
-  public static ServerAddress createSaslThreadPoolServer(HostAndPort address, TProcessor processor, long socketTimeout, SaslConnectionParams params)
+  public static ServerAddress createSaslThreadPoolServer(HostAndPort address, TProcessor processor, long socketTimeout, SaslConnectionParams params,
+      final String serverName, String threadName, final int numThreads, final int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize)
       throws TTransportException {
-    InetSocketAddress socketAddr = new InetSocketAddress(address.getHostText(), address.getPort());
-    TNonblockingServerSocket transport = new TNonblockingServerSocket(socketAddr);
+    log.info("Creating SASL thread pool thrift server on port=" + address.getPort());
+    TServerSocket transport = new TServerSocket(address.getPort());
 
     final String hostname;
     try {
@@ -243,12 +245,16 @@ public class TServerUtils {
       throw new TTransportException(e);
     }
 
+    log.info("Computed hostname of " + hostname);
+
     final UserGroupInformation serverUser;
     try {
       serverUser = UserGroupInformation.getLoginUser();
     } catch (IOException e) {
       throw new TTransportException(e);
     }
+
+    log.info("Logged in as " + serverUser + ", creating TSsaslServerTransport factory with " + params.getKerberosServerPrimary() + "/" + hostname);
 
     // Make the SASL transport factory with the instance and primary from the kerberos server principal, SASL properties
     // and the SASL callback handler from Hadoop to ensure authorization ID is the authentication ID
@@ -260,10 +266,13 @@ public class TServerUtils {
     TTransportFactory ugiTransportFactory = new UGIAssumingTransportFactory(saslTransportFactory, serverUser);
 
     if (address.getPort() == 0) {
-      address = HostAndPort.fromParts(address.getHostText(), transport.getPort());
+      address = HostAndPort.fromParts(address.getHostText(), transport.getServerSocket().getLocalPort());
+      // address = HostAndPort.fromParts(address.getHostText(), transport.getPort());
     }
 
-    return new ServerAddress(createThreadPoolServer(transport, processor, ugiTransportFactory), address);
+    return new ServerAddress(new TThreadPoolServer(new TThreadPoolServer.Args(transport).transportFactory(ugiTransportFactory).processor(processor)
+        .protocolFactory(ThriftUtil.protocolFactory())), address);
+    // return new ServerAddress(new CustomNonBlockingServer(options), address);
   }
 
   public static ServerAddress startTServer(AccumuloConfiguration conf, HostAndPort address, TProcessor processor, String serverName, String threadName,
@@ -289,7 +298,8 @@ public class TServerUtils {
     if (sslParams != null) {
       serverAddress = createSslThreadPoolServer(address, processor, serverSocketTimeout, sslParams);
     } else if (saslParams != null) {
-      serverAddress = createSaslThreadPoolServer(address, processor, serverSocketTimeout, saslParams);
+      serverAddress = createSaslThreadPoolServer(address, processor, serverSocketTimeout, saslParams, serverName, threadName, numThreads, numSTThreads,
+          timeBetweenThreadChecks, maxMessageSize);
     } else {
       serverAddress = createNonBlockingServer(address, processor, serverName, threadName, numThreads, numSTThreads, timeBetweenThreadChecks, maxMessageSize);
     }
