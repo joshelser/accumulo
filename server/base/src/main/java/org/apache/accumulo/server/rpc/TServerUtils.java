@@ -235,6 +235,7 @@ public class TServerUtils {
   public static ServerAddress createSaslThreadPoolServer(HostAndPort address, TProcessor processor, long socketTimeout, SaslConnectionParams params,
       final String serverName, String threadName, final int numThreads, final int numSTThreads, long timeBetweenThreadChecks, long maxMessageSize)
       throws TTransportException {
+    // TODO *Need* to switch over to the NonBlockingServer and TNonBlockingServerSockets
     log.info("Creating SASL thread pool thrift server on port=" + address.getPort());
     TServerSocket transport = new TServerSocket(address.getPort());
 
