@@ -1324,6 +1324,7 @@ public class Tablet {
     acuTableConf.addObserver(configObserver = new ConfigurationObserver() {
 
       private void reloadConstraints() {
+        log.info("Reloading constraints for " + extent);
         constraintChecker.set(new ConstraintChecker(acuTableConf));
       }
 
@@ -2455,6 +2456,10 @@ public class Tablet {
       ConstraintChecker ncc = new ConstraintChecker(acuTableConf);
       constraintChecker.compareAndSet(cc, ncc);
     }
+  }
+
+  public ConstraintChecker getConstraintChecker() {
+    return constraintChecker.get();
   }
 
   public CommitSession prepareMutationsForCommit(TservConstraintEnv cenv, List<Mutation> mutations) throws TConstraintViolationException {

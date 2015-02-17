@@ -212,6 +212,7 @@ import org.apache.accumulo.tserver.Tablet.TabletClosedException;
 import org.apache.accumulo.tserver.TabletServerResourceManager.TabletResourceManager;
 import org.apache.accumulo.tserver.TabletStatsKeeper.Operation;
 import org.apache.accumulo.tserver.compaction.MajorCompactionReason;
+import org.apache.accumulo.tserver.constraints.ActiveConstraints;
 import org.apache.accumulo.tserver.data.ServerConditionalMutation;
 import org.apache.accumulo.tserver.log.DfsLogger;
 import org.apache.accumulo.tserver.log.LogSorter;
@@ -2575,6 +2576,23 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
       }
 
       return ret;
+    }
+
+    @Override
+    public List<String> getActiveConstraints(TInfo tinfo, TCredentials credentials, String tableId) throws TException {
+      if (!security.authenticateUser(credentials, credentials)) {
+        throw new ThriftSecurityException(credentials.getPrincipal(), SecurityErrorCode.BAD_CREDENTIALS);
+      }
+      List<Tablet> copyOnlineTablets = new ArrayList<Tablet>();
+
+      synchronized (onlineTablets) {
+        copyOnlineTablets.addAll(onlineTablets.values()); // avoid concurrent modification
+      }
+
+      log.info("Online tablets: " + copyOnlineTablets + " looking at " + tableId);
+
+      ActiveConstraints activeConstraints = new ActiveConstraints(new Text(tableId), copyOnlineTablets);
+      return new ArrayList<String>(activeConstraints.getMinimumConstraints());
     }
   }
 

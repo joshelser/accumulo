@@ -55,6 +55,7 @@ class TableConfWatcher implements Watcher {
     String path = event.getPath();
     if (log.isTraceEnabled())
       log.trace("WatchedEvent : " + toString(event));
+    log.debug("WatchedEvent : " + toString(event));
 
     String tableId = null;
     String key = null;

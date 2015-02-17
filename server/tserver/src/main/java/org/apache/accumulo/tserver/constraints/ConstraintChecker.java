@@ -18,6 +18,7 @@ package org.apache.accumulo.tserver.constraints;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,7 +36,7 @@ import org.apache.log4j.Logger;
 
 public class ConstraintChecker {
 
-  private ArrayList<Constraint> constrains;
+  private ArrayList<Constraint> constraints;
   private static final Logger log = Logger.getLogger(ConstraintChecker.class);
 
   private ClassLoader loader;
@@ -44,7 +45,7 @@ public class ConstraintChecker {
   private AtomicLong lastCheck = new AtomicLong(0);
 
   public ConstraintChecker(TableConfiguration conf) {
-    constrains = new ArrayList<Constraint>();
+    constraints = new ArrayList<Constraint>();
 
     this.conf = conf;
 
@@ -62,23 +63,23 @@ public class ConstraintChecker {
           String className = entry.getValue();
           Class<? extends Constraint> clazz = loader.loadClass(className).asSubclass(Constraint.class);
           log.debug("Loaded constraint " + clazz.getName() + " for " + conf.getTableId());
-          constrains.add(clazz.newInstance());
+          constraints.add(clazz.newInstance());
         }
       }
 
       lastCheck.set(System.currentTimeMillis());
 
     } catch (Throwable e) {
-      constrains.clear();
+      constraints.clear();
       loader = null;
-      constrains.add(new UnsatisfiableConstraint((short) -1, "Failed to load constraints, not accepting mutations."));
+      constraints.add(new UnsatisfiableConstraint((short) -1, "Failed to load constraints, not accepting mutations."));
       log.error("Failed to load constraints " + conf.getTableId() + " " + e.toString(), e);
     }
   }
 
   public boolean classLoaderChanged() {
 
-    if (constrains.size() == 0)
+    if (constraints.size() == 0)
       return false;
 
     try {
@@ -113,7 +114,7 @@ public class ConstraintChecker {
       return violations;
     }
 
-    for (Constraint constraint : constrains) {
+    for (Constraint constraint : constraints) {
       List<Short> violationCodes = null;
       Throwable throwable = null;
 
@@ -162,5 +163,9 @@ public class ConstraintChecker {
     }
 
     return violations;
+  }
+  
+  public List<Constraint> getConstraints() {
+    return Collections.unmodifiableList(constraints);
   }
 }

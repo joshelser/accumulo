@@ -44,15 +44,15 @@ public class ThriftTransportKey {
     this.sslParams = sslParams;
   }
 
-  String getLocation() {
+  public String getLocation() {
     return location;
   }
 
-  int getPort() {
+  public int getPort() {
     return port;
   }
 
-  long getTimeout() {
+  public long getTimeout() {
     return timeout;
   }
 

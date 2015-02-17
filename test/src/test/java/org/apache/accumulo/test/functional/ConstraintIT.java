@@ -17,17 +17,26 @@
 package org.apache.accumulo.test.functional;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static org.junit.Assert.assertNotNull;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.accumulo.core.Constants;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.MutationsRejectedException;
 import org.apache.accumulo.core.client.Scanner;
+import org.apache.accumulo.core.client.impl.ServerConfigurationUtil;
+import org.apache.accumulo.core.client.impl.ThriftTransportKey;
+import org.apache.accumulo.core.client.impl.ThriftTransportPool;
+import org.apache.accumulo.core.conf.AccumuloConfiguration;
 import org.apache.accumulo.core.conf.Property;
 import org.apache.accumulo.core.data.ConstraintViolationSummary;
 import org.apache.accumulo.core.data.Key;
@@ -35,14 +44,30 @@ import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
+import org.apache.accumulo.core.security.Credentials;
+import org.apache.accumulo.core.security.thrift.TCredentials;
+import org.apache.accumulo.core.tabletserver.thrift.TabletClientService;
+import org.apache.accumulo.core.util.ServerServices;
+import org.apache.accumulo.core.util.ServerServices.Service;
+import org.apache.accumulo.core.util.SslConnectionParams;
+import org.apache.accumulo.core.util.ThriftUtil;
 import org.apache.accumulo.core.util.UtilWaitThread;
+import org.apache.accumulo.core.zookeeper.ZooUtil;
 import org.apache.accumulo.examples.simple.constraints.AlphaNumKeyConstraint;
 import org.apache.accumulo.examples.simple.constraints.NumericValueConstraint;
+import org.apache.accumulo.fate.zookeeper.ZooCache;
+import org.apache.accumulo.fate.zookeeper.ZooCacheFactory;
 import org.apache.accumulo.harness.AccumuloClusterIT;
+import org.apache.accumulo.trace.instrument.Tracer;
 import org.apache.hadoop.io.Text;
+import org.apache.thrift.transport.TTransport;
+import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConstraintIT extends AccumuloClusterIT {
+  private static final Logger log = LoggerFactory.getLogger(ConstraintIT.class);
 
   @Override
   protected int defaultTimeoutSeconds() {
@@ -51,12 +76,76 @@ public class ConstraintIT extends AccumuloClusterIT {
 
   @Test
   public void run() throws Exception {
+    long timeout = AccumuloConfiguration.getTimeInMillis(Property.GENERAL_RPC_TIMEOUT.getDefaultValue());
     String[] tableNames = getUniqueNames(3);
+    Credentials credentials = new Credentials(getPrincipal(), getToken());
     Connector c = getConnector();
+    Instance instance = c.getInstance();
+    TCredentials tcreds = credentials.toThrift(instance);
     for (String table : tableNames) {
       c.tableOperations().create(table);
       c.tableOperations().addConstraint(table, NumericValueConstraint.class.getName());
       c.tableOperations().addConstraint(table, AlphaNumKeyConstraint.class.getName());
+    }
+
+    ArrayList<ThriftTransportKey> servers = new ArrayList<ThriftTransportKey>();
+    ZooCache zc = new ZooCacheFactory().getZooCache(instance.getZooKeepers(), instance.getZooKeepersSessionTimeOut());
+    for (String tserver : zc.getChildren(ZooUtil.getRoot(instance) + Constants.ZTSERVERS)) {
+      String path = ZooUtil.getRoot(instance) + Constants.ZTSERVERS + "/" + tserver;
+      byte[] data = ZooUtil.getLockData(zc, path);
+      if (data != null && !new String(data, UTF_8).equals("master"))
+        servers
+            .add(new ThriftTransportKey(new ServerServices(new String(data)).getAddressString(Service.TSERV_CLIENT), timeout, SslConnectionParams.forClient(ServerConfigurationUtil
+                .getConfiguration(instance))));
+    }
+
+    final int expectedConstraints = 3;
+    ThriftTransportPool pool = ThriftTransportPool.getInstance();
+    while (true) {
+      Map<String,Integer> constraintCountsByTable = new HashMap<String,Integer>();
+
+      // For each server
+      for (ThriftTransportKey ttk : servers) {
+        TTransport transport = null;
+        try {
+          // Open a transport
+          transport = pool.getTransport(ttk.getLocation() + ":" + ttk.getPort(), ttk.getTimeout(), ttk.getSslParams());
+          TabletClientService.Client client = ThriftUtil.createClient(new TabletClientService.Client.Factory(), transport);
+
+          for (String tableName : tableNames) {
+              // convert the name to an id
+            String tableId = c.tableOperations().tableIdMap().get(tableName);
+            assertNotNull("Found no mapping for table", tableName);
+            List<String> constraints = client.getActiveConstraints(Tracer.traceInfo(), tcreds, tableId);
+
+            log.info("Verified {} constraints for {} on {}", constraints.size(), tableId, ttk);
+            if (0 != constraints.size()) {
+              constraintCountsByTable.put(tableName, constraints.size());
+            }
+          }
+        } finally {
+          if (null != transport) {
+            pool.returnTransport(transport);
+          }
+        }
+      }
+
+      boolean failed = false;
+      for (Entry<String,Integer> entry : constraintCountsByTable.entrySet()) {
+        if (expectedConstraints != entry.getValue()) {
+          log.warn("{} only had {} constraints, retrying", entry.getKey(), entry.getValue());
+          failed = true;
+        }
+      }
+
+      if (constraintCountsByTable.size() != tableNames.length) {
+        log.warn("Missing constraints for tables");
+      } else if (!failed) {
+        log.info("Found all constraints");
+        break;
+      }
+
+      Thread.sleep(1000);
     }
 
     // Logger logger = Logger.getLogger(Constants.CORE_PACKAGE_NAME);
@@ -272,7 +361,7 @@ public class ConstraintIT extends AccumuloClusterIT {
       List<ConstraintViolationSummary> cvsl = mre.getConstraintViolationSummaries();
 
       if (cvsl.size() != 2) {
-        throw new Exception("Unexpected constraints");
+        Assert.fail("Unexpected constraints:  " + cvsl);
       }
 
       HashMap<String,Integer> expected = new HashMap<String,Integer>();

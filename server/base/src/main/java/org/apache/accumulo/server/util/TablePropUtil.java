@@ -26,8 +26,12 @@ import org.apache.accumulo.fate.zookeeper.ZooUtil.NodeMissingPolicy;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.zookeeper.ZooReaderWriter;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TablePropUtil {
+  private static final Logger log = LoggerFactory.getLogger(TablePropUtil.class);
+
   public static boolean setTableProperty(String tableId, String property, String value) throws KeeperException, InterruptedException {
     if (!isPropertyValid(property, value))
       return false;
@@ -38,6 +42,7 @@ public class TablePropUtil {
 
     // create the zk node for this property and set it's data to the specified value
     String zPath = zkTablePath + "/" + property;
+    log.debug("Setting property in ZK {}={}", zPath, value);
     ZooReaderWriter.getInstance().putPersistentData(zPath, value.getBytes(UTF_8), NodeExistsPolicy.OVERWRITE);
 
     return true;
