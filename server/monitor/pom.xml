@@ -118,7 +118,7 @@
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.ext</groupId>
-      <artifactId>jersey-mvc-mustache</artifactId>
+      <artifactId>jersey-mvc-freemarker</artifactId>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.media</groupId>
