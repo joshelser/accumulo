@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -54,9 +53,6 @@ import org.apache.accumulo.tserver.tablet.CommitSession;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 
 /**
  * Central logging facility for the TServerInfo.
@@ -93,9 +89,6 @@ public class TabletServerLogger {
 
   private final AtomicLong syncCounter;
   private final AtomicLong flushCounter;
-
-  private final long toleratedFailures;
-  private final Cache<Long,Object> walErrors;
 
   private final RetryFactory retryFactory;
   private Retry retry = null;
@@ -143,16 +136,13 @@ public class TabletServerLogger {
     }
   }
 
-  public TabletServerLogger(TabletServer tserver, long maxSize, AtomicLong syncCounter, AtomicLong flushCounter, long toleratedWalCreationFailures,
-      long toleratedFailuresPeriodMillis, RetryFactory retryFactory) {
+  public TabletServerLogger(TabletServer tserver, long maxSize, AtomicLong syncCounter, AtomicLong flushCounter, RetryFactory retryFactory) {
     this.tserver = tserver;
     this.maxSize = maxSize;
     this.syncCounter = syncCounter;
     this.flushCounter = flushCounter;
-    this.toleratedFailures = toleratedWalCreationFailures;
     this.retryFactory = retryFactory;
     this.retry = null;
-    this.walErrors = CacheBuilder.newBuilder().maximumSize(toleratedFailures).expireAfterWrite(toleratedFailuresPeriodMillis, TimeUnit.MILLISECONDS).build();
   }
 
   private int initializeLoggers(final List<DfsLogger> copy) throws IOException {
@@ -223,10 +213,9 @@ public class TabletServerLogger {
       }
 
       // We have more retries or we exceeded the maximum number of accepted failures
-      if (retry.canRetry() && walErrors.size() < toleratedFailures) {
+      if (retry.canRetry()) {
         // Use the retry and record the time in which we did so
         retry.useRetry();
-        walErrors.put(System.currentTimeMillis(), "");
 
         try {
           // Backoff

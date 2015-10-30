@@ -351,9 +351,6 @@ public class TabletServer extends AccumuloServerContext implements Runnable {
           + minBlockSize + ". Either increase the " + Property.TSERV_WALOG_MAX_SIZE + " or decrease dfs.namenode.fs-limits.min-block-size in hdfs-site.xml.");
 
     final long toleratedWalCreationFailures = aconf.getCount(Property.TSERV_WALOG_TOLERATED_CREATION_FAILURES);
-    // TODO Remove in 1.8
-    @SuppressWarnings("deprecation")
-    final long toleratedWalCreationFailuresPeriod = aconf.getTimeInMillis(Property.TSERV_WALOG_TOLERATED_CREATION_FAILURES_PERIOD);
     final long walCreationFailureRetryIncrement = aconf.getTimeInMillis(Property.TSERV_WALOG_TOLERATED_WAIT_INCREMENT);
     final long walCreationFailureRetryMax = aconf.getTimeInMillis(Property.TSERV_WALOG_TOLERATED_MAXIMUM_WAIT_DURATION);
     // Tolerate `toleratedWalCreationFailures` failures, waiting `walCreationFailureRetryIncrement` milliseconds after the first failure,
@@ -361,8 +358,7 @@ public class TabletServer extends AccumuloServerContext implements Runnable {
     final RetryFactory walCreationRetryFactory = new RetryFactory(toleratedWalCreationFailures, walCreationFailureRetryIncrement,
         walCreationFailureRetryIncrement, walCreationFailureRetryMax);
 
-    logger = new TabletServerLogger(this, walogMaxSize, syncCounter, flushCounter, toleratedWalCreationFailures, toleratedWalCreationFailuresPeriod,
-        walCreationRetryFactory);
+    logger = new TabletServerLogger(this, walogMaxSize, syncCounter, flushCounter, walCreationRetryFactory);
     this.resourceManager = new TabletServerResourceManager(this, fs);
     this.security = AuditedSecurityOperation.getInstance(this);
 
