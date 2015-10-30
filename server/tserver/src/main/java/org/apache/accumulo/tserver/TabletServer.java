@@ -362,7 +362,8 @@ public class TabletServer extends AccumuloServerContext implements Runnable {
         walCreationFailureRetryIncrement, walCreationFailureRetryMax);
 
     logger = new TabletServerLogger(this, walogMaxSize, syncCounter, flushCounter, toleratedWalCreationFailures, toleratedWalCreationFailuresPeriod,
-        walCreationRetryFactory.create());    this.resourceManager = new TabletServerResourceManager(this, fs);
+        walCreationRetryFactory);
+    this.resourceManager = new TabletServerResourceManager(this, fs);
     this.security = AuditedSecurityOperation.getInstance(this);
 
     metricsFactory = new TabletServerMetricsFactory(aconf);

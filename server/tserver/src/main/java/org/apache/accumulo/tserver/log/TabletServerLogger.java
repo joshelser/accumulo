@@ -39,6 +39,7 @@ import org.apache.accumulo.core.protobuf.ProtobufUtil;
 import org.apache.accumulo.core.replication.ReplicationConfigurationUtil;
 import org.apache.accumulo.core.util.UtilWaitThread;
 import org.apache.accumulo.fate.zookeeper.Retry;
+import org.apache.accumulo.fate.zookeeper.RetryFactory;
 import org.apache.accumulo.server.conf.TableConfiguration;
 import org.apache.accumulo.server.fs.VolumeManager;
 import org.apache.accumulo.server.replication.StatusUtil;
@@ -95,7 +96,9 @@ public class TabletServerLogger {
 
   private final long toleratedFailures;
   private final Cache<Long,Object> walErrors;
-  private final Retry retry;
+
+  private final RetryFactory retryFactory;
+  private Retry retry = null;
 
   static private abstract class TestCallWithWriteLock {
     abstract boolean test();
@@ -141,13 +144,14 @@ public class TabletServerLogger {
   }
 
   public TabletServerLogger(TabletServer tserver, long maxSize, AtomicLong syncCounter, AtomicLong flushCounter, long toleratedWalCreationFailures,
-      long toleratedFailuresPeriodMillis, Retry retry) {
+      long toleratedFailuresPeriodMillis, RetryFactory retryFactory) {
     this.tserver = tserver;
     this.maxSize = maxSize;
     this.syncCounter = syncCounter;
     this.flushCounter = flushCounter;
     this.toleratedFailures = toleratedWalCreationFailures;
-    this.retry = retry;
+    this.retryFactory = retryFactory;
+    this.retry = null;
     this.walErrors = CacheBuilder.newBuilder().maximumSize(toleratedFailures).expireAfterWrite(toleratedFailuresPeriodMillis, TimeUnit.MILLISECONDS).build();
   }
 
@@ -206,8 +210,18 @@ public class TabletServerLogger {
       alog.open(tserver.getClientAddressString());
       loggers.add(alog);
       logSetId.incrementAndGet();
+
+      // When we successfully create a WAL, make sure to reset the Retry.
+      if (null != retry) {
+        retry = null;
+      }
+
       return;
     } catch (Exception t) {
+      if (null == retry) {
+        retry = retryFactory.create();
+      }
+
       // We have more retries or we exceeded the maximum number of accepted failures
       if (retry.canRetry() && walErrors.size() < toleratedFailures) {
         // Use the retry and record the time in which we did so
@@ -222,6 +236,7 @@ public class TabletServerLogger {
           throw new RuntimeException(e);
         }
       } else {
+        log.error("Repeatedly failed to create WAL. Going to exit tabletserver.", t);
         // We didn't have retries or we failed too many times.
         Halt.halt("Experienced too many errors creating WALs, giving up");
       }
