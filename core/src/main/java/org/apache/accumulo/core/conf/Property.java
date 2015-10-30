@@ -246,12 +246,13 @@ public enum Property {
   TSERV_WALOG_MAX_SIZE("tserver.walog.max.size", "1G", PropertyType.MEMORY,
       "The maximum size for each write-ahead log. See comment for property tserver.memory.maps.max"),
 
-  TSERV_WALOG_TOLERATED_CREATION_FAILURES("tserver.walog.tolerated.creation.failures", "50", PropertyType.COUNT,
+  TSERV_WALOG_TOLERATED_CREATION_FAILURES("tserver.walog.tolerated.creation.failures", "25", PropertyType.COUNT,
       "The maximum number of failures tolerated when creating a new WAL file within the period specified by tserver.walog.failures.period."
           + " Exceeding this number of failures in the period causes the TabletServer to exit."),
   TSERV_WALOG_TOLERATED_WAIT_INCREMENT("tserver.walog.tolerated.wait.increment", "500ms", PropertyType.TIMEDURATION,
      "The amount of time to wait between failures to create a WALog."),
-  TSERV_WALOG_TOLERATED_MAXIMUM_WAIT_DURATION("tserver.walog.maximum.wait.duration", "15s", PropertyType.TIMEDURATION,
+  // 25 failures with 500ms increment is a max of 150s
+  TSERV_WALOG_TOLERATED_MAXIMUM_WAIT_DURATION("tserver.walog.maximum.wait.duration", "150s", PropertyType.TIMEDURATION,
       "The maximum amount of time to wait after a failure to create a WAL file."),
 
   TSERV_MAJC_DELAY("tserver.compaction.major.delay", "30s", PropertyType.TIMEDURATION,
