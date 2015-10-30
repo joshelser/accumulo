@@ -38,6 +38,7 @@ import org.apache.accumulo.core.data.impl.KeyExtent;
 import org.apache.accumulo.core.protobuf.ProtobufUtil;
 import org.apache.accumulo.core.replication.ReplicationConfigurationUtil;
 import org.apache.accumulo.core.util.UtilWaitThread;
+import org.apache.accumulo.fate.zookeeper.Retry;
 import org.apache.accumulo.server.conf.TableConfiguration;
 import org.apache.accumulo.server.fs.VolumeManager;
 import org.apache.accumulo.server.replication.StatusUtil;
@@ -94,6 +95,7 @@ public class TabletServerLogger {
 
   private final long toleratedFailures;
   private final Cache<Long,Object> walErrors;
+  private final Retry retry;
 
   static private abstract class TestCallWithWriteLock {
     abstract boolean test();
@@ -139,12 +141,13 @@ public class TabletServerLogger {
   }
 
   public TabletServerLogger(TabletServer tserver, long maxSize, AtomicLong syncCounter, AtomicLong flushCounter, long toleratedWalCreationFailures,
-      long toleratedFailuresPeriodMillis) {
+      long toleratedFailuresPeriodMillis, Retry retry) {
     this.tserver = tserver;
     this.maxSize = maxSize;
     this.syncCounter = syncCounter;
     this.flushCounter = flushCounter;
     this.toleratedFailures = toleratedWalCreationFailures;
+    this.retry = retry;
     this.walErrors = CacheBuilder.newBuilder().maximumSize(toleratedFailures).expireAfterWrite(toleratedFailuresPeriodMillis, TimeUnit.MILLISECONDS).build();
   }
 
@@ -205,10 +208,25 @@ public class TabletServerLogger {
       logSetId.incrementAndGet();
       return;
     } catch (Exception t) {
-      walErrors.put(System.currentTimeMillis(), "");
-      if (walErrors.size() > toleratedFailures) {
+      // We have more retries or we exceeded the maximum number of accepted failures
+      if (retry.canRetry() && walErrors.size() < toleratedFailures) {
+        // Use the retry and record the time in which we did so
+        retry.useRetry();
+        walErrors.put(System.currentTimeMillis(), "");
+
+        try {
+          // Backoff
+          retry.waitForNextAttempt();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException(e);
+        }
+      } else {
+        // We didn't have retries or we failed too many times.
         Halt.halt("Experienced too many errors creating WALs, giving up");
       }
+
+      // The exception will trigger the log creation to be re-attempted.
       throw new RuntimeException(t);
     }
   }
