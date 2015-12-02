@@ -295,8 +295,8 @@ public class SimpleGarbageCollector implements Iface {
 
     @Override
     public Iterator<String> getBlipIterator() throws TableNotFoundException, AccumuloException, AccumuloSecurityException {
-      IsolatedScanner scanner = new IsolatedScanner(instance.getConnector(credentials.getPrincipal(), credentials.getToken()).createScanner(tableName,
-          Authorizations.EMPTY));
+      IsolatedScanner scanner = new IsolatedScanner(
+          instance.getConnector(credentials.getPrincipal(), credentials.getToken()).createScanner(tableName, Authorizations.EMPTY));
 
       scanner.setRange(MetadataSchema.BlipSection.getRange());
 
@@ -310,8 +310,8 @@ public class SimpleGarbageCollector implements Iface {
 
     @Override
     public Iterator<Entry<Key,Value>> getReferenceIterator() throws TableNotFoundException, AccumuloException, AccumuloSecurityException {
-      IsolatedScanner scanner = new IsolatedScanner(instance.getConnector(credentials.getPrincipal(), credentials.getToken()).createScanner(tableName,
-          Authorizations.EMPTY));
+      IsolatedScanner scanner = new IsolatedScanner(
+          instance.getConnector(credentials.getPrincipal(), credentials.getToken()).createScanner(tableName, Authorizations.EMPTY));
       scanner.fetchColumnFamily(DataFileColumnFamily.NAME);
       scanner.fetchColumnFamily(ScanFileColumnFamily.NAME);
       TabletsSection.ServerColumnFamily.DIRECTORY_COLUMN.fetch(scanner);
@@ -702,7 +702,7 @@ public class SimpleGarbageCollector implements Iface {
   }
 
   private HostAndPort startStatsService() throws UnknownHostException {
-    Processor<Iface> processor = new Processor<Iface>(RpcWrapper.service(this, new Processor<Iface>(this).getProcessMapView()));
+    Processor<Iface> processor = new Processor<Iface>(RpcWrapper.service(this, new Processor<Iface>(this)));
     int port = config.getPort(Property.GC_PORT);
     long maxMessageSize = config.getMemoryInBytes(Property.GENERAL_MAX_MESSAGE_SIZE);
     HostAndPort result = HostAndPort.fromParts(opts.getAddress(), port);

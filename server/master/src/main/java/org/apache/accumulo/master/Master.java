@@ -288,8 +288,8 @@ public class Master implements LiveTServerSet.Listener, TableObserver, CurrentSt
       Accumulo.abortIfFateTransactions();
 
       if (serverConfig.getConfiguration().get(Property.INSTANCE_VOLUMES).trim().length() > 0) {
-        throw new IllegalStateException("Do not set property " + Property.INSTANCE_VOLUMES.getKey()
-            + " until after upgrade. Kill all Accumulo processes, unset property, and try again.");
+        throw new IllegalStateException(
+            "Do not set property " + Property.INSTANCE_VOLUMES.getKey() + " until after upgrade. Kill all Accumulo processes, unset property, and try again.");
       }
 
       try {
@@ -841,7 +841,7 @@ public class Master implements LiveTServerSet.Listener, TableObserver, CurrentSt
                   break;
               }
           }
-        }catch(Throwable t) {
+        } catch (Throwable t) {
           log.error("Error occurred reading / switching master goal state. Will continue with attempt to update status", t);
         }
 
@@ -1012,8 +1012,8 @@ public class Master implements LiveTServerSet.Listener, TableObserver, CurrentSt
     waitForMetadataUpgrade.await();
 
     try {
-      final AgeOffStore<Master> store = new AgeOffStore<Master>(new org.apache.accumulo.fate.ZooStore<Master>(ZooUtil.getRoot(instance) + Constants.ZFATE,
-          ZooReaderWriter.getInstance()), 1000 * 60 * 60 * 8);
+      final AgeOffStore<Master> store = new AgeOffStore<Master>(
+          new org.apache.accumulo.fate.ZooStore<Master>(ZooUtil.getRoot(instance) + Constants.ZFATE, ZooReaderWriter.getInstance()), 1000 * 60 * 60 * 8);
 
       int threads = this.getConfiguration().getConfiguration().getCount(Property.MASTER_FATE_THREADPOOL_SIZE);
 
@@ -1032,8 +1032,8 @@ public class Master implements LiveTServerSet.Listener, TableObserver, CurrentSt
       throw new IOException(e);
     }
 
-    Processor<Iface> processor = new Processor<Iface>(RpcWrapper.service(new MasterClientServiceHandler(this),
-        new Processor<Iface>(new MasterClientServiceHandler(this)).getProcessMapView()));
+    Processor<Iface> processor = new Processor<Iface>(
+        RpcWrapper.service(new MasterClientServiceHandler(this), new Processor<Iface>(new MasterClientServiceHandler(this))));
     ServerAddress sa = TServerUtils.startServer(getSystemConfiguration(), hostname, Property.MASTER_CLIENTPORT, processor, "Master",
         "Master Client Service Handler", null, Property.MASTER_MINTHREADS, Property.MASTER_THREADCHECK, Property.GENERAL_MAX_MESSAGE_SIZE);
     clientService = sa.server;

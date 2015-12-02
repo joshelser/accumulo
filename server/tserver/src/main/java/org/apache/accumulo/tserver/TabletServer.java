@@ -652,8 +652,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
           }
 
           activeScans.add(new ActiveScan(mss.client, mss.user, mss.threadPoolExtent.getTableId().toString(), ct - mss.startTime, ct - mss.lastAccessTime,
-              ScanType.BATCH, state, mss.threadPoolExtent.toThrift(), Translator.translate(mss.columnSet, Translators.CT), mss.ssiList, mss.ssio, mss.auths
-                  .getAuthorizationsBB()));
+              ScanType.BATCH, state, mss.threadPoolExtent.toThrift(), Translator.translate(mss.columnSet, Translators.CT), mss.ssiList, mss.ssio,
+              mss.auths.getAuthorizationsBB()));
         }
       }
 
@@ -1067,8 +1067,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
 
           runState.set(ScanRunState.RUNNING);
 
-          Thread.currentThread().setName(
-              "User: " + scanSession.user + " Start: " + scanSession.startTime + " Client: " + scanSession.client + " Tablet: " + scanSession.extent);
+          Thread.currentThread()
+              .setName("User: " + scanSession.user + " Start: " + scanSession.startTime + " Client: " + scanSession.client + " Tablet: " + scanSession.extent);
 
           Tablet tablet = onlineTablets.get(scanSession.extent);
 
@@ -1157,8 +1157,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
               failures.put(entry.getKey(), entry.getValue());
               continue;
             }
-            Thread.currentThread().setName(
-                "Client: " + session.client + " User: " + session.user + " Start: " + session.startTime + " Tablet: " + entry.getKey().toString());
+            Thread.currentThread()
+                .setName("Client: " + session.client + " User: " + session.user + " Start: " + session.startTime + " Tablet: " + entry.getKey().toString());
 
             LookupResult lookupResult;
             try {
@@ -1297,8 +1297,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
     }
 
     @Override
-    public ScanResult continueScan(TInfo tinfo, long scanID) throws NoSuchScanIDException, NotServingTabletException,
-        org.apache.accumulo.core.tabletserver.thrift.TooManyFilesException {
+    public ScanResult continueScan(TInfo tinfo, long scanID)
+        throws NoSuchScanIDException, NotServingTabletException, org.apache.accumulo.core.tabletserver.thrift.TooManyFilesException {
       ScanSession scanSession = (ScanSession) sessionManager.reserveSession(scanID);
       if (scanSession == null) {
         throw new NoSuchScanIDException();
@@ -1311,8 +1311,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
       }
     }
 
-    private ScanResult continueScan(TInfo tinfo, long scanID, ScanSession scanSession) throws NoSuchScanIDException, NotServingTabletException,
-        org.apache.accumulo.core.tabletserver.thrift.TooManyFilesException {
+    private ScanResult continueScan(TInfo tinfo, long scanID, ScanSession scanSession)
+        throws NoSuchScanIDException, NotServingTabletException, org.apache.accumulo.core.tabletserver.thrift.TooManyFilesException {
 
       if (scanSession.nextBatchTask == null) {
         scanSession.nextBatchTask = new NextBatchTask(scanID, scanSession.interruptFlag);
@@ -1374,8 +1374,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
       if (ss != null) {
         long t2 = System.currentTimeMillis();
 
-        log.debug(String.format("ScanSess tid %s %s %,d entries in %.2f secs, nbTimes = [%s] ", TServerUtils.clientAddress.get(), ss.extent.getTableId()
-            .toString(), ss.entriesReturned, (t2 - ss.startTime) / 1000.0, ss.nbTimes.toString()));
+        log.debug(String.format("ScanSess tid %s %s %,d entries in %.2f secs, nbTimes = [%s] ", TServerUtils.clientAddress.get(),
+            ss.extent.getTableId().toString(), ss.entriesReturned, (t2 - ss.startTime) / 1000.0, ss.nbTimes.toString()));
         if (scanMetrics.isEnabled()) {
           scanMetrics.add(TabletServerScanMetrics.scan, t2 - ss.startTime);
           scanMetrics.add(TabletServerScanMetrics.resultSize, ss.entriesReturned);
@@ -1407,8 +1407,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
         log.error(tse, tse);
         throw tse;
       }
-      Map<KeyExtent,List<Range>> batch = Translator.translate(tbatch, new TKeyExtentTranslator(), new Translator.ListTranslator<TRange,Range>(
-          new TRangeTranslator()));
+      Map<KeyExtent,List<Range>> batch = Translator.translate(tbatch, new TKeyExtentTranslator(),
+          new Translator.ListTranslator<TRange,Range>(new TRangeTranslator()));
 
       // This is used to determine which thread pool to use
       KeyExtent threadPoolExtent = batch.keySet().iterator().next();
@@ -1802,13 +1802,13 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
         log.debug(String.format("Authentication Failures: %d, first %s", us.authFailures.size(), first.toString()));
       }
 
-      return new UpdateErrors(Translator.translate(us.failures, Translators.KET), Translator.translate(violations, Translators.CVST), Translator.translate(
-          us.authFailures, Translators.KET));
+      return new UpdateErrors(Translator.translate(us.failures, Translators.KET), Translator.translate(violations, Translators.CVST),
+          Translator.translate(us.authFailures, Translators.KET));
     }
 
     @Override
-    public void update(TInfo tinfo, TCredentials credentials, TKeyExtent tkeyExtent, TMutation tmutation) throws NotServingTabletException,
-        ConstraintViolationException, ThriftSecurityException {
+    public void update(TInfo tinfo, TCredentials credentials, TKeyExtent tkeyExtent, TMutation tmutation)
+        throws NotServingTabletException, ConstraintViolationException, ThriftSecurityException {
 
       String tableId = new String(tkeyExtent.getTable(), UTF_8);
       if (!security.canWrite(credentials, tableId, Tables.getNamespaceId(instance, tableId)))
@@ -2165,8 +2165,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
     }
 
     @Override
-    public void splitTablet(TInfo tinfo, TCredentials credentials, TKeyExtent tkeyExtent, ByteBuffer splitPoint) throws NotServingTabletException,
-        ThriftSecurityException {
+    public void splitTablet(TInfo tinfo, TCredentials credentials, TKeyExtent tkeyExtent, ByteBuffer splitPoint)
+        throws NotServingTabletException, ThriftSecurityException {
 
       String tableId = new String(ByteBufferUtil.toBytes(tkeyExtent.table));
       String namespaceId;
@@ -2323,8 +2323,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
               all.remove(extent);
 
               if (all.size() > 0) {
-                log.error("Tablet " + extent + " overlaps previously assigned " + unopenedOverlapping + " " + openingOverlapping + " " + onlineOverlapping
-                    + " " + all);
+                log.error("Tablet " + extent + " overlaps previously assigned " + unopenedOverlapping + " " + openingOverlapping + " " + onlineOverlapping + " "
+                    + all);
               }
               return;
             }
@@ -2935,7 +2935,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
       Text locationToOpen = null;
       SortedMap<Key,Value> tabletsKeyValues = new TreeMap<Key,Value>();
       try {
-        Pair<Text,KeyExtent> pair = verifyTabletInformation(extent, TabletServer.this.getTabletSession(), tabletsKeyValues, getClientAddressString(), getLock());
+        Pair<Text,KeyExtent> pair = verifyTabletInformation(extent, TabletServer.this.getTabletSession(), tabletsKeyValues, getClientAddressString(),
+            getLock());
         if (pair != null) {
           locationToOpen = pair.getFirst();
           if (pair.getSecond() != null) {
@@ -3160,7 +3161,7 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
   private HostAndPort startTabletClientService() throws UnknownHostException {
     // start listening for client connection last
     ThriftClientHandler handler = new ThriftClientHandler();
-    Iface tch = RpcWrapper.service(handler, new Processor<Iface>(handler).getProcessMapView());
+    Iface tch = RpcWrapper.service(handler, new Processor<Iface>(handler));
     Processor<Iface> processor = new Processor<Iface>(tch);
     HostAndPort address = startServer(getSystemConfiguration(), clientAddress.getHostText(), Property.TSERV_CLIENTPORT, processor, "Thrift Client Server");
     log.info("address = " + address);
@@ -3287,8 +3288,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
           // if while loop does not execute at all and mm != null,
           // then
           // finally block should place mm back on queue
-          while (!serverStopRequested && mm != null && client != null && client.getOutputProtocol() != null
-              && client.getOutputProtocol().getTransport() != null && client.getOutputProtocol().getTransport().isOpen()) {
+          while (!serverStopRequested && mm != null && client != null && client.getOutputProtocol() != null && client.getOutputProtocol().getTransport() != null
+              && client.getOutputProtocol().getTransport().isOpen()) {
             try {
               mm.send(SystemCredentials.get().toThrift(instance), getClientAddressString(), iface);
               mm = null;

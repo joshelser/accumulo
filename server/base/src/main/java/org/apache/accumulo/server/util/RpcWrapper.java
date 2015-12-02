@@ -28,7 +28,7 @@ import org.apache.accumulo.trace.instrument.thrift.RpcServerInvocationHandler;
 import org.apache.accumulo.trace.instrument.thrift.TraceWrap;
 import org.apache.thrift.ProcessFunction;
 import org.apache.thrift.TApplicationException;
-import org.apache.thrift.TBase;
+import org.apache.thrift.TBaseProcessor;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +39,10 @@ import org.slf4j.LoggerFactory;
  * a network issue, but informs the client that a {@link TApplicationException} had occurred, as it did in Thrift 0.9.0. This performs similar functions as
  * {@link TraceWrap}, but with the additional action of translating exceptions. See also ACCUMULO-1691 and ACCUMULO-2950.
  *
- * ACCUMULO-4065 found that the above exception-wrapping is not appropriate for Thrift's implementation of oneway methods. Oneway methods are defined as
- * a method which the client does not wait for it to return. Normally, this is acceptable as these methods are void. Therefore, if another client reuses
- * the connection to send a new RPC, there is no "extra" data sitting on the InputStream from the Socket (that the server sent). However, the implementation
- * of a oneway method <em>does</em> send a response to the client when the implementation throws a {@link TException}. This message showing up on the client's
+ * ACCUMULO-4065 found that the above exception-wrapping is not appropriate for Thrift's implementation of oneway methods. Oneway methods are defined as a
+ * method which the client does not wait for it to return. Normally, this is acceptable as these methods are void. Therefore, if another client reuses the
+ * connection to send a new RPC, there is no "extra" data sitting on the InputStream from the Socket (that the server sent). However, the implementation of a
+ * oneway method <em>does</em> send a response to the client when the implementation throws a {@link TException}. This message showing up on the client's
  * InputStream causes future use of the Thrift Connection to become unusable. As long as the Thrift implementation sends a message back when oneway methods
  * throw a {@link TException}, we much make sure that we don't re-wrap-and-throw any exceptions as {@link TException}s.
  *
@@ -51,14 +51,15 @@ import org.slf4j.LoggerFactory;
 public class RpcWrapper {
   private static final Logger log = LoggerFactory.getLogger(RpcWrapper.class);
 
-  public static <T> T service(final T instance, @SuppressWarnings("rawtypes") final Map<String,ProcessFunction<T,? extends TBase>> processorView) {
+  public static <I> I service(final I instance, final TBaseProcessor<I> processor) {
+    final Map<String,ProcessFunction<I,?>> processorView = processor.getProcessMapView();
     final Set<String> onewayMethods = getOnewayMethods(processorView);
     log.debug("Found oneway Thrift methods: " + onewayMethods);
 
     InvocationHandler handler = getInvocationHandler(instance, onewayMethods);
 
     @SuppressWarnings("unchecked")
-    T proxiedInstance = (T) Proxy.newProxyInstance(instance.getClass().getClassLoader(), instance.getClass().getInterfaces(), handler);
+    I proxiedInstance = (I) Proxy.newProxyInstance(instance.getClass().getClassLoader(), instance.getClass().getInterfaces(), handler);
     return proxiedInstance;
   }
 
@@ -90,7 +91,7 @@ public class RpcWrapper {
     };
   }
 
-  protected static <T> Set<String> getOnewayMethods(@SuppressWarnings("rawtypes") Map<String,ProcessFunction<T,? extends TBase>> processorView) {
+  protected static <F> Set<String> getOnewayMethods(Map<String,ProcessFunction<F,?>> processorView) {
     // Get a handle on the isOnewayMethod and make it accessible
     final Method isOnewayMethod;
     try {
@@ -106,7 +107,7 @@ public class RpcWrapper {
 
     try {
       final Set<String> onewayMethods = new HashSet<String>();
-      for (@SuppressWarnings("rawtypes") Entry<String,ProcessFunction<T,? extends TBase>> entry : processorView.entrySet()) {
+      for (Entry<String,ProcessFunction<F,?>> entry : processorView.entrySet()) {
         try {
           if ((Boolean) isOnewayMethod.invoke(entry.getValue())) {
             onewayMethods.add(entry.getKey());

@@ -30,7 +30,6 @@ import org.apache.accumulo.proxy.thrift.AccumuloProxy;
 import org.apache.accumulo.server.util.RpcWrapper;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TBaseProcessor;
-import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.server.THsHaServer;
@@ -123,23 +122,26 @@ public class Proxy {
     server.serve();
   }
 
-  public static TServer createProxyServer(Class<?> api, Class<?> implementor, final int port, Class<? extends TProtocolFactory> protoClass,
-      Properties properties) throws Exception {
-    final TNonblockingServerSocket socket = new TNonblockingServerSocket(port);
+  public static TServer createProxyServer(final Class<?> api, final Class<?> implementor, final int port, final Class<? extends TProtocolFactory> protoClass,
+      final Properties properties) throws Exception {
+    Class<?> proxyIfaceClass = Class.forName(api.getName() + "$Iface");
+    return createProxyServer(proxyIfaceClass, api.getName() + "$Processor", implementor, port, protoClass, properties);
+  }
+
+  private static <I,P extends TBaseProcessor<I>> TServer createProxyServer(final Class<I> proxyIfaceClass, final String procClassName,
+      final Class<?> implementor, final int port, final Class<? extends TProtocolFactory> protoClass, final Properties properties) throws Exception {
+    @SuppressWarnings("unchecked")
+    final Class<P> proxyProcClass = (Class<P>) Class.forName(procClassName);
 
     // create the implementor
-    Object impl = implementor.getConstructor(Properties.class).newInstance(properties);
-
-    Class<?> proxyProcClass = Class.forName(api.getName() + "$Processor");
-    Class<?> proxyIfaceClass = Class.forName(api.getName() + "$Iface");
-
     @SuppressWarnings("unchecked")
-    Constructor<? extends TProcessor> proxyProcConstructor = (Constructor<? extends TProcessor>) proxyProcClass.getConstructor(proxyIfaceClass);
+    final I impl = (I) implementor.getConstructor(Properties.class).newInstance(properties);
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    final TProcessor processor = proxyProcConstructor.newInstance(RpcWrapper.service(impl, ((TBaseProcessor) proxyProcConstructor.newInstance(impl)).getProcessMapView()));
+    final Constructor<P> proxyProcConstructor = proxyProcClass.getConstructor(proxyIfaceClass);
+    final P processor = proxyProcConstructor.newInstance(RpcWrapper.service(impl, proxyProcConstructor.newInstance(impl)));
 
-    THsHaServer.Args args = new THsHaServer.Args(socket);
+    final TNonblockingServerSocket socket = new TNonblockingServerSocket(port);
+    final THsHaServer.Args args = new THsHaServer.Args(socket);
     args.processor(processor);
     final long maxFrameSize = AccumuloConfiguration.getMemoryInBytes(properties.getProperty("maxFrameSize", "16M"));
     if (maxFrameSize > Integer.MAX_VALUE)
@@ -149,4 +151,5 @@ public class Proxy {
     args.maxReadBufferBytes = maxFrameSize;
     return new THsHaServer(args);
   }
+
 }
