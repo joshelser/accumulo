@@ -463,6 +463,9 @@ public class ConfiguratorBase {
     if (token instanceof DelegationTokenStub) {
       DelegationTokenStub delTokenStub = (DelegationTokenStub) token;
       Token<? extends TokenIdentifier> hadoopToken = job.getCredentials().getToken(new Text(delTokenStub.getServiceName()));
+      if (hadoopToken == null) {
+        return token;
+      }
       AuthenticationTokenIdentifier identifier = new AuthenticationTokenIdentifier();
       try {
         identifier.readFields(new DataInputStream(new ByteArrayInputStream(hadoopToken.getIdentifier())));
