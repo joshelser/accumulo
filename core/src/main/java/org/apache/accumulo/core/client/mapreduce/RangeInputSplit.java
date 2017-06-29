@@ -57,6 +57,7 @@ public class RangeInputSplit extends InputSplit implements Writable {
   private Range range;
   private String[] locations;
   private String tableId, tableName, instanceName, zooKeepers, principal;
+  private Boolean useSasl;
   private TokenSource tokenSource;
   private String tokenFile;
   private AuthenticationToken token;
@@ -215,6 +216,10 @@ public class RangeInputSplit extends InputSplit implements Writable {
     if (in.readBoolean()) {
       level = Level.toLevel(in.readInt());
     }
+
+    if (in.readBoolean()) {
+      useSasl = in.readBoolean();
+    }
   }
 
   @Override
@@ -301,6 +306,11 @@ public class RangeInputSplit extends InputSplit implements Writable {
     if (null != level) {
       out.writeInt(level.toInt());
     }
+
+    out.writeBoolean(null != useSasl);
+    if (null != useSasl) {
+      out.writeBoolean(useSasl);
+    }
   }
 
   /**
@@ -360,8 +370,12 @@ public class RangeInputSplit extends InputSplit implements Writable {
     if (null == zooKeepers) {
       return null;
     }
+    boolean useSasl = false;
+    if (null != isUseSasl()) {
+      useSasl = isUseSasl();
+    }
 
-    return new ZooKeeperInstance(base.withInstance(getInstanceName()).withZkHosts(getZooKeepers()));
+    return new ZooKeeperInstance(base.withInstance(getInstanceName()).withZkHosts(getZooKeepers()).withSasl(useSasl));
   }
 
   public String getInstanceName() {
@@ -378,6 +392,14 @@ public class RangeInputSplit extends InputSplit implements Writable {
 
   public void setZooKeepers(String zooKeepers) {
     this.zooKeepers = zooKeepers;
+  }
+
+  public Boolean isUseSasl() {
+    return useSasl;
+  }
+
+  public void setUseSasl(boolean useSasl) {
+    this.useSasl = useSasl;
   }
 
   public String getPrincipal() {
@@ -502,6 +524,7 @@ public class RangeInputSplit extends InputSplit implements Writable {
     sb.append(" fetchColumns: ").append(fetchedColumns);
     sb.append(" iterators: ").append(iterators);
     sb.append(" logLevel: ").append(level);
+    sb.append(" useSasl: ").append(useSasl);
     return sb.toString();
   }
 }
