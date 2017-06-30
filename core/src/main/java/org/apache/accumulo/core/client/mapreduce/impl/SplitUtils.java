@@ -38,10 +38,11 @@ public class SplitUtils {
    * refactor.
    */
   public static void updateSplit(RangeInputSplit split, Instance instance, InputTableConfig tableConfig, String principal, AuthenticationToken token,
-      Authorizations auths, Level logLevel) {
+      Authorizations auths, Level logLevel, boolean useSasl) {
     split.setInstanceName(instance.getInstanceName());
     split.setZooKeepers(instance.getZooKeepers());
     split.setMockInstance(instance instanceof MockInstance);
+    split.setUseSasl(useSasl);
 
     split.setPrincipal(principal);
     split.setToken(token);

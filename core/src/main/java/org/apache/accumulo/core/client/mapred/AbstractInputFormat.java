@@ -31,6 +31,7 @@ import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.ClientConfiguration;
+import org.apache.accumulo.core.client.ClientConfiguration.ClientProperty;
 import org.apache.accumulo.core.client.ClientSideIteratorScanner;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
@@ -662,6 +663,7 @@ public abstract class AbstractInputFormat<K,V> implements InputFormat<K,V> {
       // get the metadata information for these ranges
       Map<String,Map<KeyExtent,List<Range>>> binnedRanges = new HashMap<>();
       TabletLocator tl;
+      final ClientConfiguration clientConfig = getClientConfiguration(job);
       try {
         if (tableConfig.isOfflineScan()) {
           binnedRanges = binOfflineTable(job, tableId, ranges);
@@ -675,8 +677,7 @@ public abstract class AbstractInputFormat<K,V> implements InputFormat<K,V> {
           // its possible that the cache could contain complete, but old information about a tables tablets... so clear it
           tl.invalidateCache();
 
-          ClientContext context = new ClientContext(getInstance(job), new Credentials(getPrincipal(job), getAuthenticationToken(job)),
-              getClientConfiguration(job));
+          ClientContext context = new ClientContext(getInstance(job), new Credentials(getPrincipal(job), getAuthenticationToken(job)), clientConfig);
           while (!tl.binRanges(context, ranges, binnedRanges).isEmpty()) {
             if (!(instance instanceof MockInstance)) {
               if (!Tables.exists(instance, tableId))
@@ -695,6 +696,8 @@ public abstract class AbstractInputFormat<K,V> implements InputFormat<K,V> {
       }
 
       HashMap<Range,ArrayList<String>> splitsToAdd = null;
+
+      final boolean useSasl = Boolean.valueOf(clientConfig.get(ClientProperty.INSTANCE_RPC_SASL_ENABLED));
 
       if (!autoAdjust)
         splitsToAdd = new HashMap<>();
@@ -717,7 +720,7 @@ public abstract class AbstractInputFormat<K,V> implements InputFormat<K,V> {
               clippedRanges.add(ke.clip(r));
 
             BatchInputSplit split = new BatchInputSplit(tableName, tableId, clippedRanges, new String[] {location});
-            SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel);
+            SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel, useSasl);
 
             splits.add(split);
           } else {
@@ -726,7 +729,7 @@ public abstract class AbstractInputFormat<K,V> implements InputFormat<K,V> {
               if (autoAdjust) {
                 // divide ranges into smaller ranges, based on the tablets
                 RangeInputSplit split = new RangeInputSplit(tableName, tableId, ke.clip(r), new String[] {location});
-                SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel);
+                SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel, useSasl);
                 split.setOffline(tableConfig.isOfflineScan());
                 split.setIsolatedScan(tableConfig.shouldUseIsolatedScanners());
                 split.setUsesLocalIterators(tableConfig.shouldUseLocalIterators());
@@ -748,7 +751,7 @@ public abstract class AbstractInputFormat<K,V> implements InputFormat<K,V> {
       if (!autoAdjust)
         for (Map.Entry<Range,ArrayList<String>> entry : splitsToAdd.entrySet()) {
           RangeInputSplit split = new RangeInputSplit(tableName, tableId, entry.getKey(), entry.getValue().toArray(new String[0]));
-          SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel);
+          SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel, useSasl);
           split.setOffline(tableConfig.isOfflineScan());
           split.setIsolatedScan(tableConfig.shouldUseIsolatedScanners());
           split.setUsesLocalIterators(tableConfig.shouldUseLocalIterators());

@@ -41,6 +41,7 @@ import org.apache.accumulo.core.client.ScannerBase;
 import org.apache.accumulo.core.client.TableDeletedException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.TableOfflineException;
+import org.apache.accumulo.core.client.ClientConfiguration.ClientProperty;
 import org.apache.accumulo.core.client.admin.DelegationTokenConfig;
 import org.apache.accumulo.core.client.admin.SecurityOperations;
 import org.apache.accumulo.core.client.impl.AuthenticationTokenIdentifier;
@@ -709,6 +710,7 @@ public abstract class AbstractInputFormat<K,V> extends InputFormat<K,V> {
       // get the metadata information for these ranges
       Map<String,Map<KeyExtent,List<Range>>> binnedRanges = new HashMap<>();
       TabletLocator tl;
+      final ClientConfiguration clientConfig = getClientConfiguration(context);
       try {
         if (tableConfig.isOfflineScan()) {
           binnedRanges = binOfflineTable(context, tableId, ranges);
@@ -724,7 +726,7 @@ public abstract class AbstractInputFormat<K,V> extends InputFormat<K,V> {
           tl.invalidateCache();
 
           ClientContext clientContext = new ClientContext(getInstance(context), new Credentials(getPrincipal(context), getAuthenticationToken(context)),
-              getClientConfiguration(context));
+              clientConfig);
           while (!tl.binRanges(clientContext, ranges, binnedRanges).isEmpty()) {
             if (!(instance instanceof MockInstance)) {
               if (!Tables.exists(instance, tableId))
@@ -746,6 +748,8 @@ public abstract class AbstractInputFormat<K,V> extends InputFormat<K,V> {
       // Map from Range to Array of Locations, we only use this if we're don't split
       HashMap<Range,ArrayList<String>> splitsToAdd = null;
 
+      final boolean useSasl = Boolean.valueOf(clientConfig.get(ClientProperty.INSTANCE_RPC_SASL_ENABLED));
+
       if (!autoAdjust)
         splitsToAdd = new HashMap<>();
 
@@ -766,7 +770,7 @@ public abstract class AbstractInputFormat<K,V> extends InputFormat<K,V> {
             for (Range r : extentRanges.getValue())
               clippedRanges.add(ke.clip(r));
             BatchInputSplit split = new BatchInputSplit(tableName, tableId, clippedRanges, new String[] {location});
-            SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel);
+            SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel, useSasl);
 
             splits.add(split);
           } else {
@@ -775,7 +779,7 @@ public abstract class AbstractInputFormat<K,V> extends InputFormat<K,V> {
               if (autoAdjust) {
                 // divide ranges into smaller ranges, based on the tablets
                 RangeInputSplit split = new RangeInputSplit(tableName, tableId, ke.clip(r), new String[] {location});
-                SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel);
+                SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel, useSasl);
                 split.setOffline(tableConfig.isOfflineScan());
                 split.setIsolatedScan(tableConfig.shouldUseIsolatedScanners());
                 split.setUsesLocalIterators(tableConfig.shouldUseLocalIterators());
@@ -797,7 +801,7 @@ public abstract class AbstractInputFormat<K,V> extends InputFormat<K,V> {
       if (!autoAdjust)
         for (Map.Entry<Range,ArrayList<String>> entry : splitsToAdd.entrySet()) {
           RangeInputSplit split = new RangeInputSplit(tableName, tableId, entry.getKey(), entry.getValue().toArray(new String[0]));
-          SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel);
+          SplitUtils.updateSplit(split, instance, tableConfig, principal, token, auths, logLevel, useSasl);
           split.setOffline(tableConfig.isOfflineScan());
           split.setIsolatedScan(tableConfig.shouldUseIsolatedScanners());
           split.setUsesLocalIterators(tableConfig.shouldUseLocalIterators());
